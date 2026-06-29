@@ -118,6 +118,7 @@ class AdminRoute
                 $router->post('/update', [OrderController::class, 'update']);
                 $router->post('/assign', [OrderController::class, 'assign']);
                 $router->post('/paid', [OrderController::class, 'paid']);
+                $router->post('/manual-process', [OrderController::class, 'manualProcess']);
                 $router->post('/cancel', [OrderController::class, 'cancel']);
                 $router->post('/detail', [OrderController::class, 'detail']);
             });

@@ -22,6 +22,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $surplus_amount
  * @property int $type
  * @property int $status
+ * @property int $manual_status
+ * @property int|null $manual_submitted_at
+ * @property int|null $manual_handled_at
+ * @property int|null $manual_handled_by
  * @property array|null $surplus_order_ids
  * @property int|null $coupon_id
  * @property int $created_at
@@ -50,7 +54,11 @@ class Order extends Model
         'created_at' => 'timestamp',
         'updated_at' => 'timestamp',
         'surplus_order_ids' => 'array',
-        'handling_amount' => 'integer'
+        'handling_amount' => 'integer',
+        'manual_status' => 'integer',
+        'manual_submitted_at' => 'integer',
+        'manual_handled_at' => 'integer',
+        'manual_handled_by' => 'integer',
     ];
 
     const STATUS_PENDING = 0; // 待支付
@@ -58,6 +66,10 @@ class Order extends Model
     const STATUS_CANCELLED = 2; // 已取消
     const STATUS_COMPLETED = 3; // 已完成
     const STATUS_DISCOUNTED = 4; // 已折抵
+
+    const MANUAL_STATUS_NONE = 0; // 无
+    const MANUAL_STATUS_SUBMITTED = 1; // 待人工处理
+    const MANUAL_STATUS_HANDLED = 2; // 已人工处理
 
     public static $statusMap = [
         self::STATUS_PENDING => '待支付',

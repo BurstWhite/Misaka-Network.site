@@ -39,6 +39,7 @@ class UserRoute
             // Order
             $router->post('/order/save', [OrderController::class, 'save']);
             $router->post('/order/checkout', [OrderController::class, 'checkout']);
+            $router->post('/order/manual-submit', [OrderController::class, 'manualSubmit']);
             $router->get('/order/check', [OrderController::class, 'check']);
             $router->get('/order/detail', [OrderController::class, 'detail']);
             $router->get('/order/fetch', [OrderController::class, 'fetch']);

@@ -160,6 +160,38 @@ class OrderController extends Controller
         ]);
     }
 
+    public function manualSubmit(Request $request)
+    {
+        $request->validate([
+            'trade_no' => 'required|string',
+        ]);
+
+        $order = Order::where('trade_no', $request->input('trade_no'))
+            ->where('user_id', $request->user()->id)
+            ->where('status', Order::STATUS_PENDING)
+            ->first();
+        if (!$order) {
+            return $this->fail([400, __('Order does not exist or has been paid')]);
+        }
+
+        if ($order->manual_status === Order::MANUAL_STATUS_HANDLED) {
+            return $this->fail([400, '订单已人工处理']);
+        }
+
+        $order->manual_status = Order::MANUAL_STATUS_SUBMITTED;
+        $order->manual_submitted_at = $order->manual_submitted_at ?: time();
+        $order->manual_handled_at = null;
+        $order->manual_handled_by = null;
+        $order->payment_id = null;
+        $order->handling_amount = null;
+
+        if (!$order->save()) {
+            return $this->fail([500, '人工订单提交失败']);
+        }
+
+        return $this->success(OrderResource::make($order->load(['payment', 'plan'])));
+    }
+
     public function check(Request $request)
     {
         $tradeNo = $request->input('trade_no');

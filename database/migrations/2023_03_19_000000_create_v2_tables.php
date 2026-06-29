@@ -265,6 +265,10 @@ return new class extends Migration {
                 $table->integer('balance_amount')->nullable()->comment('使用余额');
                 $table->text('surplus_order_ids')->nullable()->comment('折抵订单');
                 $table->integer('status')->default(0)->comment('0待支付1开通中2已取消3已完成4已折抵');
+                $table->tinyInteger('manual_status')->default(0)->comment('0无1待人工处理2已人工处理');
+                $table->integer('manual_submitted_at')->nullable()->comment('人工提交时间');
+                $table->integer('manual_handled_at')->nullable()->comment('人工处理时间');
+                $table->integer('manual_handled_by')->nullable()->comment('人工处理管理员ID');
                 $table->integer('commission_status')->default(false)->comment('0待确认1发放中2有效3无效');
                 $table->integer('commission_balance')->default(0);
                 $table->integer('actual_commission_balance')->nullable()->comment('实际支付佣金');

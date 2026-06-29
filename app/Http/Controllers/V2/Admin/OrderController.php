@@ -15,6 +15,7 @@ use App\Utils\Helper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
@@ -154,6 +155,40 @@ class OrderController extends Controller
         if (!$orderService->paid('manual_operation')) {
             return $this->fail([500, '更新失败']);
         }
+        return $this->success(true);
+    }
+
+    public function manualProcess(Request $request)
+    {
+        $request->validate([
+            'trade_no' => 'required|string',
+        ]);
+
+        $order = Order::where('trade_no', $request->input('trade_no'))
+            ->first();
+        if (!$order) {
+            return $this->fail([400202, '订单不存在']);
+        }
+        if ($order->status !== Order::STATUS_PENDING) {
+            return $this->fail([400, '只能对待支付的订单进行操作']);
+        }
+        if ((int) $order->manual_status !== Order::MANUAL_STATUS_SUBMITTED) {
+            return $this->fail([400, '该订单未提交人工处理']);
+        }
+
+        $orderService = new OrderService($order);
+        if (!$orderService->paid('manual_operation')) {
+            return $this->fail([500, '更新失败']);
+        }
+
+        $order->refresh();
+        $order->manual_status = Order::MANUAL_STATUS_HANDLED;
+        $order->manual_handled_at = time();
+        $order->manual_handled_by = Auth::guard('sanctum')->id();
+        if (!$order->save()) {
+            return $this->fail([500, '人工处理记录保存失败']);
+        }
+
         return $this->success(true);
     }
 
