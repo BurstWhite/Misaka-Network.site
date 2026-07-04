@@ -1,0 +1,35 @@
+{
+    "name": "Linus Pay",
+    "code": "linus_pay",
+    "type": "payment",
+    "version": "1.0.0",
+    "description": "Linus Pay payment plugin",
+    "author": "XBoard Team",
+    "config": {
+        "gateway_url": {
+            "type": "string",
+            "label": "支付网关地址",
+            "default": "https://pay.linus.us.kg"
+        },
+        "pid": {
+            "type": "string",
+            "label": "商户ID",
+            "default": ""
+        },
+        "merchant_private_key": {
+            "type": "text",
+            "label": "商户私钥",
+            "default": ""
+        },
+        "platform_public_key": {
+            "type": "text",
+            "label": "平台公钥",
+            "default": ""
+        },
+        "type": {
+            "type": "string",
+            "label": "支付方式",
+            "default": ""
+        }
+    }
+}
