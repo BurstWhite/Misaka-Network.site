@@ -9,6 +9,8 @@ use App\Http\Requests\Admin\KnowledgeSort;
 use App\Models\Knowledge;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class KnowledgeController extends Controller
 {
@@ -49,6 +51,37 @@ class KnowledgeController extends Controller
         }
 
         return $this->success(true);
+    }
+
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|file|image|mimes:jpg,jpeg,png,gif,webp|max:8192',
+        ], [
+            'image.required' => '请选择要上传的图片',
+            'image.image' => '上传文件必须是图片',
+            'image.mimes' => '图片格式仅支持 JPG、PNG、GIF、WEBP',
+            'image.max' => '图片大小不能超过 8MB',
+        ]);
+
+        $file = $request->file('image');
+        $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'jpg');
+        $extension = $extension === 'jpeg' ? 'jpg' : $extension;
+        $datePath = now()->format('Y/m');
+        $uploadRoot = base_path(".docker/.data/uploads/knowledge/{$datePath}");
+
+        File::ensureDirectoryExists($uploadRoot, 0755, true);
+
+        $filename = Str::uuid()->toString() . ".{$extension}";
+        $file->move($uploadRoot, $filename);
+
+        $relativePath = "uploads/knowledge/{$datePath}/{$filename}";
+        $url = "/{$relativePath}";
+
+        return $this->success([
+            'url' => $url,
+            'markdown' => "![图片]({$url})",
+        ]);
     }
 
     public function show(Request $request)

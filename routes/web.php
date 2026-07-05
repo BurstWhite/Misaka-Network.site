@@ -18,6 +18,21 @@ use Illuminate\Support\Facades\File;
 |
 */
 
+Route::get('/uploads/knowledge/{year}/{month}/{filename}', function (string $year, string $month, string $filename) {
+    $path = base_path(".docker/.data/uploads/knowledge/{$year}/{$month}/{$filename}");
+
+    if (!File::isFile($path)) {
+        abort(404);
+    }
+
+    return response()->file($path, [
+        'Cache-Control' => 'public, max-age=31536000, immutable',
+    ]);
+})->where([
+    'year' => '[0-9]{4}',
+    'month' => '[0-9]{2}',
+    'filename' => '[A-Za-z0-9._-]+',
+]);
 
 Route::get('/', function (Request $request) {
     if (admin_setting('app_url') && admin_setting('safe_mode_enable', 0)) {

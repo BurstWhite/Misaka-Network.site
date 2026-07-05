@@ -20,6 +20,7 @@ use App\Http\Controllers\V2\Admin\PaymentController;
 use App\Http\Controllers\V2\Admin\SystemController;
 use App\Http\Controllers\V2\Admin\ThemeController;
 use App\Http\Controllers\V2\Admin\TrafficResetController;
+use App\Http\Controllers\V2\Admin\AppleIdController;
 use Illuminate\Contracts\Routing\Registrar;
 
 class AdminRoute
@@ -219,9 +220,19 @@ class AdminRoute
                 $router->get('/fetch', [KnowledgeController::class, 'fetch']);
                 $router->get('/getCategory', [KnowledgeController::class, 'getCategory']);
                 $router->post('/save', [KnowledgeController::class, 'save']);
+                $router->post('/upload-image', [KnowledgeController::class, 'uploadImage']);
                 $router->post('/show', [KnowledgeController::class, 'show']);
                 $router->post('/drop', [KnowledgeController::class, 'drop']);
                 $router->post('/sort', [KnowledgeController::class, 'sort']);
+            });
+
+            // Apple ID accounts for restricted knowledge documents.
+            $router->group([
+                'prefix' => 'apple-id'
+            ], function ($router) {
+                $router->get('/fetch', [AppleIdController::class, 'fetch']);
+                $router->post('/save', [AppleIdController::class, 'save']);
+                $router->post('/drop', [AppleIdController::class, 'drop']);
             });
 
             // Payment  

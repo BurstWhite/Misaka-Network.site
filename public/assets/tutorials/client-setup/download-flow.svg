@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", Arial, sans-serif; fill: #172033; }
+      .title { font-size: 34px; font-weight: 700; }
+      .label { font-size: 25px; font-weight: 700; }
+      .body { font-size: 20px; fill: #42526b; }
+      .small { font-size: 17px; fill: #64748b; }
+      .card { fill: #fff; stroke: #e5e7eb; stroke-width: 2; filter: url(#shadow); }
+      .pill { fill: #e8f1ff; }
+      .blue { fill: #2563eb; }
+      .green { fill: #10b981; }
+      .amber { fill: #f59e0b; }
+      .line { stroke: #94a3b8; stroke-width: 4; stroke-linecap: round; }
+    </style>
+  </defs>
+  <rect width="1200" height="620" fill="#f7f9fc"/>
+  <text x="64" y="70" class="title">客户端下载与订阅导入流程</text>
+  <text x="64" y="108" class="body">先下载客户端，再导入本站订阅链接，最后开启系统代理或 VPN。</text>
+
+  <rect x="64" y="176" width="290" height="270" rx="20" class="card"/>
+  <circle cx="112" cy="226" r="24" class="blue"/>
+  <text x="104" y="234" font-size="24" font-weight="800" fill="#fff">1</text>
+  <text x="148" y="236" class="label">下载客户端</text>
+  <rect x="102" y="278" width="214" height="48" rx="14" class="pill"/>
+  <text x="128" y="309" class="body">App Store / GitHub</text>
+  <text x="102" y="364" class="small">iOS 使用 Shadowrocket</text>
+  <text x="102" y="396" class="small">Windows / macOS 使用 Clash Verge Rev</text>
+
+  <line x1="384" y1="312" x2="480" y2="312" class="line"/>
+  <path d="M468 292 L494 312 L468 332" fill="none" class="line"/>
+
+  <rect x="514" y="176" width="290" height="270" rx="20" class="card"/>
+  <circle cx="562" cy="226" r="24" class="green"/>
+  <text x="554" y="234" font-size="24" font-weight="800" fill="#fff">2</text>
+  <text x="598" y="236" class="label">导入订阅</text>
+  <rect x="552" y="278" width="214" height="48" rx="14" fill="#e9fbf3"/>
+  <text x="585" y="309" class="body">复制订阅链接</text>
+  <rect x="552" y="356" width="214" height="42" rx="10" fill="#f1f5f9"/>
+  <text x="572" y="383" class="small">{{subscribeUrl}}</text>
+
+  <line x1="834" y1="312" x2="930" y2="312" class="line"/>
+  <path d="M918 292 L944 312 L918 332" fill="none" class="line"/>
+
+  <rect x="964" y="176" width="172" height="270" rx="20" class="card"/>
+  <circle cx="1012" cy="226" r="24" class="amber"/>
+  <text x="1004" y="234" font-size="24" font-weight="800" fill="#fff">3</text>
+  <text x="994" y="284" class="label">开启连接</text>
+  <rect x="1000" y="326" width="100" height="54" rx="27" fill="#d1fae5"/>
+  <circle cx="1074" cy="353" r="21" fill="#10b981"/>
+  <text x="998" y="420" class="small">选择节点</text>
+
+  <rect x="64" y="505" width="1072" height="54" rx="14" fill="#fff7ed" stroke="#fed7aa"/>
+  <text x="92" y="540" class="body">提示：下载包优先使用官方来源；需要加速时请使用本站自建 CDN 镜像，并保留官方链接用于核对。</text>
+</svg>

@@ -90,7 +90,11 @@ class KnowledgeController extends Controller
             $this->formatAccessData($knowledge['body']);
         }
         $subscribeUrl = Helper::getSubscribeUrl($user['token']);
-        $knowledge['body'] = $this->replacePlaceholders($knowledge['body'], $subscribeUrl);
+        $knowledge['body'] = $this->replacePlaceholders(
+            $knowledge['body'],
+            $subscribeUrl,
+            $this->canViewAppleIdAccounts($user)
+        );
 
         return $knowledge;
     }
@@ -108,8 +112,9 @@ class KnowledgeController extends Controller
         $this->applyReplacementRules($body, $rules);
     }
 
-    private function replacePlaceholders(string $body, string $subscribeUrl): string
+    private function replacePlaceholders(string $body, string $subscribeUrl, bool $canViewAppleIdAccounts): string
     {
+        $appleIdPlaceholders = $this->formatAppleIdPlaceholders($canViewAppleIdAccounts);
         $rules = [
             [
                 'type' => 'string',
@@ -130,11 +135,141 @@ class KnowledgeController extends Controller
                 'type' => 'string',
                 'search' => '{{safeBase64SubscribeUrl}}',
                 'replacement' => str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($subscribeUrl))
-            ]
+            ],
+            [
+                'type' => 'string',
+                'search' => '{{appleIdAccount}}',
+                'replacement' => $appleIdPlaceholders['account']
+            ],
+            [
+                'type' => 'string',
+                'search' => '{{appleIdPassword}}',
+                'replacement' => $appleIdPlaceholders['password']
+            ],
+            [
+                'type' => 'string',
+                'search' => '{{appleIdRegion}}',
+                'replacement' => $appleIdPlaceholders['region']
+            ],
+            [
+                'type' => 'string',
+                'search' => '{{appleIdLabel}}',
+                'replacement' => $appleIdPlaceholders['label']
+            ],
+            [
+                'type' => 'string',
+                'search' => '{{appleIdNote}}',
+                'replacement' => $appleIdPlaceholders['note']
+            ],
+            [
+                'type' => 'string',
+                'search' => '{{appleIds}}',
+                'replacement' => $appleIdPlaceholders['list']
+            ],
+            [
+                'type' => 'string',
+                'search' => '{{appleIdList}}',
+                'replacement' => $appleIdPlaceholders['list']
+            ],
         ];
 
         $this->applyReplacementRules($body, $rules);
         return $body;
+    }
+
+    private function canViewAppleIdAccounts(User $user): bool
+    {
+        return !$user->banned
+            && $user->plan_id !== null
+            && ($user->expired_at === null || $user->expired_at > time());
+    }
+
+    private function formatAppleIdPlaceholders(bool $canViewAppleIdAccounts): array
+    {
+        if (!$canViewAppleIdAccounts) {
+            $message = '<div class="v2board-no-access">购买套餐后可查看 Apple ID 账号密码信息</div>';
+            return [
+                'account' => $message,
+                'password' => $message,
+                'region' => $message,
+                'label' => $message,
+                'note' => $message,
+                'list' => $message,
+            ];
+        }
+
+        $accounts = $this->getEnabledAppleIdAccounts();
+        if (count($accounts) === 0) {
+            $message = '<div class="v2board-no-access">暂未配置 Apple ID 账号信息</div>';
+            return [
+                'account' => $message,
+                'password' => $message,
+                'region' => $message,
+                'label' => $message,
+                'note' => $message,
+                'list' => $message,
+            ];
+        }
+
+        $first = $accounts[0];
+
+        return [
+            'account' => e($first['account']),
+            'password' => e($first['password']),
+            'region' => e($first['region']),
+            'label' => e($first['label']),
+            'note' => e($first['note']),
+            'list' => $this->formatAppleIdList($accounts),
+        ];
+    }
+
+    private function getEnabledAppleIdAccounts(): array
+    {
+        $accounts = admin_setting('apple_id_accounts', []);
+        if (is_string($accounts)) {
+            $decoded = json_decode($accounts, true);
+            $accounts = json_last_error() === JSON_ERROR_NONE ? $decoded : [];
+        }
+        if (!is_array($accounts)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(function ($account) {
+            if (!is_array($account)) {
+                return null;
+            }
+            $normalized = [
+                'label' => trim((string) ($account['label'] ?? '')),
+                'account' => trim((string) ($account['account'] ?? '')),
+                'password' => (string) ($account['password'] ?? ''),
+                'region' => trim((string) ($account['region'] ?? '')),
+                'note' => trim((string) ($account['note'] ?? '')),
+                'enabled' => (bool) ($account['enabled'] ?? true),
+            ];
+            return $normalized['enabled'] && $normalized['account'] !== '' && $normalized['password'] !== ''
+                ? $normalized
+                : null;
+        }, $accounts)));
+    }
+
+    private function formatAppleIdList(array $accounts): string
+    {
+        $items = array_map(function (array $account) {
+            $title = $account['label'] ?: 'Apple ID';
+            $meta = array_filter([
+                $account['region'] ? '区域：' . e($account['region']) : '',
+                $account['note'] ? '备注：' . e($account['note']) : '',
+            ]);
+
+            return '<div class="v2board-apple-id">'
+                . '<div><strong>' . e($title) . '</strong></div>'
+                . '<div>账号：<code>' . e($account['account']) . '</code></div>'
+                . '<div>密码：<code>' . e($account['password']) . '</code></div>'
+                . (count($meta) ? '<div>' . implode('；', $meta) . '</div>' : '')
+                . '</div>';
+        }, $accounts);
+
+        return '<div class="v2board-apple-id-list">' . implode('', $items) . '</div>';
     }
 
     private function applyReplacementRules(string &$body, array $rules): void

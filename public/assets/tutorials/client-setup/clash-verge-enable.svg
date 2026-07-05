@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#0f172a" flood-opacity="0.16"/>
+    </filter>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", Arial, sans-serif; fill: #111827; }
+      .title { font-size: 32px; font-weight: 760; }
+      .body { font-size: 20px; fill: #475569; }
+      .small { font-size: 16px; fill: #64748b; }
+      .window { fill: #fff; filter: url(#shadow); }
+      .sidebar { fill: #111827; }
+      .green { fill: #10b981; }
+      .blue { fill: #2563eb; }
+      .card { fill: #f8fafc; stroke: #dbe3ef; stroke-width: 2; }
+    </style>
+  </defs>
+  <rect width="1200" height="760" fill="#f6f8fb"/>
+  <text x="64" y="68" class="title">Clash Verge Rev 开启代理</text>
+  <text x="64" y="106" class="body">选好节点后打开系统代理；需要接管全部流量时再开启 TUN。</text>
+
+  <rect x="76" y="150" width="1048" height="550" rx="24" class="window"/>
+  <rect x="76" y="150" width="230" height="550" rx="24" class="sidebar"/>
+  <text x="116" y="256" font-size="23" font-weight="760" fill="#fff">Clash Verge</text>
+  <rect x="106" y="318" width="170" height="44" rx="12" fill="#0f172a"/>
+  <text x="136" y="346" font-size="18" fill="#cbd5e1">Profiles</text>
+  <rect x="106" y="382" width="170" height="44" rx="12" fill="#1e293b"/>
+  <text x="136" y="410" font-size="18" fill="#fff">Proxies</text>
+
+  <text x="354" y="232" font-size="28" font-weight="760">Proxies</text>
+  <rect x="354" y="284" width="342" height="84" rx="18" class="card"/>
+  <circle cx="392" cy="326" r="11" class="green"/>
+  <text x="420" y="324" class="body">香港 01</text>
+  <text x="420" y="352" class="small">32 ms · selected</text>
+  <rect x="742" y="284" width="312" height="84" rx="18" class="card"/>
+  <circle cx="780" cy="326" r="11" fill="#cbd5e1"/>
+  <text x="808" y="324" class="body">日本 02</text>
+  <text x="808" y="352" class="small">88 ms</text>
+
+  <rect x="354" y="430" width="700" height="152" rx="22" fill="#fff" stroke="#dbe3ef" stroke-width="2"/>
+  <text x="396" y="486" class="body">System Proxy</text>
+  <rect x="824" y="454" width="108" height="56" rx="28" fill="#d1fae5"/>
+  <circle cx="902" cy="482" r="22" class="green"/>
+  <text x="396" y="548" class="body">TUN Mode</text>
+  <rect x="824" y="516" width="108" height="56" rx="28" fill="#dbeafe"/>
+  <circle cx="902" cy="544" r="22" class="blue"/>
+</svg>
