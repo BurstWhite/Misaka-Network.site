@@ -95,7 +95,8 @@
         appleModal: null,
         appleAccounts: [],
         appleActiveId: null,
-        activeUrlInput: null
+        activeUrlInput: null,
+        activeMirrorUrlInput: null
       };
 
       function getAccessToken() {
@@ -144,12 +145,80 @@
         }
       }
 
+      function isNoticeSaveUrl(url) {
+        return /\/notice\/(?:save|update)(?:\?|$)/.test(String(url || ''));
+      }
+
+      function findCurrentNoticeBackgroundInput() {
+        var dialog = findKnowledgeDialog(document.activeElement);
+        if (dialog && dialogUploadType(dialog) === 'notice') {
+          var input = dialog.querySelector('[data-xboard-notice-background-input="1"]') || findNoticeImageUrlInput(dialog);
+          if (input) return input;
+        }
+
+        var panels = Array.prototype.slice.call(document.querySelectorAll('[data-xboard-notice-background-panel="1"]'));
+        for (var i = 0; i < panels.length; i++) {
+          if (!visible(panels[i])) continue;
+          var panelInput = panels[i].querySelector('[data-xboard-notice-background-input="1"]');
+          if (panelInput) return panelInput;
+        }
+        return null;
+      }
+
+      function injectNoticeImageUrl(body) {
+        var imageInput = findCurrentNoticeBackgroundInput();
+        if (!imageInput) return body;
+        var imageUrl = String(imageInput.value || '').trim();
+
+        if (typeof FormData !== 'undefined' && body instanceof FormData) {
+          body.set('img_url', imageUrl);
+          return body;
+        }
+        if (typeof URLSearchParams !== 'undefined' && body instanceof URLSearchParams) {
+          body.set('img_url', imageUrl);
+          return body;
+        }
+        if (typeof body === 'string') {
+          try {
+            var json = JSON.parse(body);
+            if (json && typeof json === 'object') {
+              json.img_url = imageUrl;
+              return JSON.stringify(json);
+            }
+          } catch (e) {
+            if (body.indexOf('=') !== -1) {
+              var params = new URLSearchParams(body);
+              params.set('img_url', imageUrl);
+              return params.toString();
+            }
+          }
+        }
+        if (body == null) {
+          var fallbackParams = new URLSearchParams();
+          fallbackParams.set('img_url', imageUrl);
+          return fallbackParams.toString();
+        }
+        return body;
+      }
+
       function patchRequestAuthCapture() {
         if (window.__xboardKnowledgeAuthPatched) return;
         window.__xboardKnowledgeAuthPatched = true;
 
         if (window.XMLHttpRequest) {
+          var originalOpen = XMLHttpRequest.prototype.open;
+          var originalSend = XMLHttpRequest.prototype.send;
           var originalSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
+          XMLHttpRequest.prototype.open = function (method, url) {
+            this.__xboardAdminUrl = String(url || '');
+            return originalOpen.apply(this, arguments);
+          };
+          XMLHttpRequest.prototype.send = function (body) {
+            if (isNoticeSaveUrl(this.__xboardAdminUrl)) {
+              body = injectNoticeImageUrl(body);
+            }
+            return originalSend.call(this, body);
+          };
           XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
             if (String(name || '').toLowerCase() === 'authorization') {
               rememberAuthHeader(String(value || ''));
@@ -162,6 +231,10 @@
           var originalFetch = window.fetch;
           window.fetch = function (input, init) {
             readFetchAuthHeader(input, init);
+            var url = typeof input === 'string' ? input : (input && input.url) || '';
+            if (isNoticeSaveUrl(url) && init && Object.prototype.hasOwnProperty.call(init, 'body')) {
+              init = Object.assign({}, init, { body: injectNoticeImageUrl(init.body) });
+            }
             return originalFetch.apply(this, arguments);
           };
         }
@@ -421,6 +494,23 @@
           && (signal.indexOf('url') !== -1 || signal.indexOf('链接') !== -1 || signal.indexOf('地址') !== -1);
       }
 
+      function isNoticeImageField(input) {
+        if (!input || !input.matches || !input.matches('input')) return false;
+        var signal = inputSignal(input);
+        return signal.indexOf('img_url') !== -1
+          || signal.indexOf('image_url') !== -1
+          || signal.indexOf('背景图片') !== -1
+          || signal.indexOf('公告背景') !== -1;
+      }
+
+      function findNoticeImageUrlInput(dialog) {
+        var inputs = Array.prototype.slice.call((dialog || document).querySelectorAll('input'));
+        for (var i = 0; i < inputs.length; i++) {
+          if (isNoticeImageField(inputs[i]) || isNoticeImageUrlInput(inputs[i])) return inputs[i];
+        }
+        return null;
+      }
+
       function setInputValue(input, value) {
         var descriptor = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
         if (descriptor && descriptor.set) {
@@ -433,7 +523,22 @@
         input.focus();
       }
 
-      function createUrlUploadButton(input) {
+      function updateNoticeBackgroundPreview(panel, value) {
+        var preview = panel && panel.querySelector('[data-xboard-notice-background-preview]');
+        var clear = panel && panel.querySelector('[data-xboard-notice-background-clear]');
+        if (!preview || !clear) return;
+        value = String(value || '').trim();
+        clear.style.display = value ? '' : 'none';
+        if (!value) {
+          preview.style.display = 'none';
+          preview.removeAttribute('src');
+          return;
+        }
+        preview.src = value;
+        preview.style.display = '';
+      }
+
+      function createUrlUploadButton(input, mirrorInput) {
         var button = document.createElement('button');
         button.type = 'button';
         button.textContent = '上传图片';
@@ -451,11 +556,85 @@
           'white-space:nowrap'
         ].join(';');
         button.__xboardUrlInput = input;
+        button.__xboardMirrorUrlInput = mirrorInput || null;
         return button;
+      }
+
+      function ensureNoticeBackgroundPanel(dialog, mirrorInput) {
+        var existing = dialog.querySelector('[data-xboard-notice-background-panel="1"]');
+        if (existing) {
+          var existingInput = existing.querySelector('[data-xboard-notice-background-input="1"]');
+          if (existingInput && mirrorInput && !existingInput.value && mirrorInput.value) {
+            setInputValue(existingInput, mirrorInput.value);
+          }
+          updateNoticeBackgroundPreview(existing, existingInput ? existingInput.value : '');
+          return existingInput;
+        }
+
+        var panel = document.createElement('div');
+        panel.setAttribute('data-xboard-notice-background-panel', '1');
+        panel.style.cssText = [
+          'margin:12px 0 16px',
+          'padding:12px',
+          'border:1px solid #bfdbfe',
+          'border-radius:6px',
+          'background:#eff6ff',
+          'color:#0f172a'
+        ].join(';');
+        panel.innerHTML = [
+          '<div style="font-weight:700;margin-bottom:8px">公告背景图片</div>',
+          '<div data-xboard-notice-background-row="1" style="display:flex;align-items:center;gap:8px">',
+          '  <input data-xboard-notice-background-input="1" type="text" placeholder="上传后自动填入图片地址" style="min-width:0;flex:1;height:34px;border:1px solid #93c5fd;border-radius:4px;padding:0 10px;background:#fff;color:#0f172a">',
+          '</div>',
+          '<div style="margin-top:8px;color:#475569;font-size:12px">用于公告卡片/弹窗展示的背景图。点击上传图片从本地选择文件。</div>',
+          '<img data-xboard-notice-background-preview style="display:none;margin-top:10px;max-width:100%;max-height:140px;border-radius:4px;border:1px solid #dbeafe;background:#fff;object-fit:cover">'
+        ].join('');
+
+        var panelInput = panel.querySelector('[data-xboard-notice-background-input="1"]');
+        if (mirrorInput && mirrorInput.value) {
+          panelInput.value = mirrorInput.value;
+        }
+        var uploadButton = createUrlUploadButton(panelInput, mirrorInput);
+        var clearButton = document.createElement('button');
+        clearButton.type = 'button';
+        clearButton.textContent = '清除';
+        clearButton.setAttribute('data-xboard-notice-background-clear', '1');
+        clearButton.style.cssText = [
+          'height:32px',
+          'padding:0 10px',
+          'border:1px solid #cbd5e1',
+          'border-radius:4px',
+          'background:#fff',
+          'color:#475569',
+          'font-size:13px',
+          'cursor:pointer',
+          'white-space:nowrap'
+        ].join(';');
+        var panelRow = panel.querySelector('[data-xboard-notice-background-row="1"]');
+        panelRow.appendChild(uploadButton);
+        panelRow.appendChild(clearButton);
+
+        panelInput.addEventListener('input', function () {
+          if (mirrorInput && mirrorInput !== panelInput) setInputValue(mirrorInput, panelInput.value);
+          updateNoticeBackgroundPreview(panel, panelInput.value);
+        });
+        clearButton.addEventListener('click', function () {
+          setInputValue(panelInput, '');
+          if (mirrorInput && mirrorInput !== panelInput) setInputValue(mirrorInput, '');
+          updateNoticeBackgroundPreview(panel, '');
+        });
+
+        var target = dialog.querySelector('form') || dialog.querySelector('.ant-modal-body,.arco-modal-content,.n-modal,.el-dialog__body') || dialog;
+        target.insertBefore(panel, target.firstChild);
+        updateNoticeBackgroundPreview(panel, panelInput.value);
+        return panelInput;
       }
 
       function mountNoticeImageUrlUploads(dialog) {
         if (dialogUploadType(dialog) !== 'notice') return;
+        var mirrorInput = findNoticeImageUrlInput(dialog);
+        ensureNoticeBackgroundPanel(dialog, mirrorInput);
+
         Array.prototype.forEach.call(dialog.querySelectorAll('input'), function (input) {
           if (!visible(input) || !isNoticeImageUrlInput(input)) return;
           if (input.getAttribute('data-xboard-notice-image-url-bound') === '1') return;
@@ -593,6 +772,7 @@
           }
         }
         state.activeUrlInput = null;
+        state.activeMirrorUrlInput = null;
         if (state.input) state.input.value = '';
       }
 
@@ -614,6 +794,11 @@
             var url = data.absolute_url || data.url;
             if (!url) throw new Error('上传成功，但未返回图片地址');
             setInputValue(state.activeUrlInput, url);
+            if (state.activeMirrorUrlInput && state.activeMirrorUrlInput !== state.activeUrlInput) {
+              setInputValue(state.activeMirrorUrlInput, url);
+            }
+            var panel = state.activeUrlInput.closest ? state.activeUrlInput.closest('[data-xboard-notice-background-panel="1"]') : null;
+            updateNoticeBackgroundPreview(panel, url);
             notify('success', '图片已上传并填入公告图片地址');
             return;
           }
@@ -662,6 +847,9 @@
         state.activeTrigger = button;
         state.activeUrlInput = button.getAttribute('data-xboard-notice-image-url-upload') === '1'
           ? button.__xboardUrlInput || (button.previousElementSibling && button.previousElementSibling.matches('input') ? button.previousElementSibling : null)
+          : null;
+        state.activeMirrorUrlInput = button.getAttribute('data-xboard-notice-image-url-upload') === '1'
+          ? button.__xboardMirrorUrlInput || null
           : null;
         state.activeElement = document.activeElement;
         state.activeEditor = getFocusedMonacoEditor() || state.activeEditor;
