@@ -16,7 +16,7 @@ class NoticeSave extends FormRequest
         return [
             'title' => 'required',
             'content' => 'required',
-            'img_url' => 'nullable|url',
+            'img_url' => 'nullable|string|max:2048',
             'tags' => 'nullable|array'
         ];
     }
@@ -26,7 +26,7 @@ class NoticeSave extends FormRequest
         return [
             'title.required' => '标题不能为空',
             'content.required' => '内容不能为空',
-            'img_url.url' => '图片URL格式不正确',
+            'img_url.max' => '图片地址不能超过 2048 个字符',
             'tags.array' => '标签格式不正确'
         ];
     }

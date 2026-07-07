@@ -6,6 +6,7 @@ use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\NoticeSave;
 use App\Models\Notice;
+use App\Services\AdminImageUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -44,7 +45,19 @@ class NoticeController extends Controller
         return $this->success(true);
     }
 
+    public function uploadImage(Request $request, AdminImageUploadService $uploader)
+    {
+        $request->validate([
+            'image' => 'required|file|image|mimes:jpg,jpeg,png,gif,webp|max:8192',
+        ], [
+            'image.required' => '请选择要上传的图片',
+            'image.image' => '上传文件必须是图片',
+            'image.mimes' => '图片格式仅支持 JPG、PNG、GIF、WEBP',
+            'image.max' => '图片大小不能超过 8MB',
+        ]);
 
+        return $this->success($uploader->store($request->file('image'), 'notice'));
+    }
 
     public function show(Request $request)
     {

@@ -94,7 +94,8 @@
         monacoPatched: false,
         appleModal: null,
         appleAccounts: [],
-        appleActiveId: null
+        appleActiveId: null,
+        activeUrlInput: null
       };
 
       function getAccessToken() {
@@ -209,6 +210,12 @@
         return document.body && /知识库|Knowledge Base/i.test(normalizedText(document.body));
       }
 
+      function isNoticePage() {
+        var route = String(location.pathname || '') + String(location.hash || '');
+        if (/notice/i.test(route)) return true;
+        return document.body && /公告管理|添加公告|编辑公告|Notice/i.test(normalizedText(document.body));
+      }
+
       function trackEditor(editor) {
         if (!editor || state.editors.indexOf(editor) !== -1) return editor;
         state.editors.push(editor);
@@ -268,9 +275,21 @@
           var isKnowledge = text.indexOf('添加知识') !== -1
             || text.indexOf('编辑知识') !== -1
             || (text.indexOf('标题') !== -1 && text.indexOf('分类') !== -1 && text.indexOf('内容') !== -1);
-          if (isKnowledge) return dialog;
+          var isNotice = text.indexOf('添加公告') !== -1
+            || text.indexOf('编辑公告') !== -1
+            || (isNoticePage() && text.indexOf('标题') !== -1 && text.indexOf('内容') !== -1);
+          if (isKnowledge || isNotice) return dialog;
         }
         return null;
+      }
+
+      function dialogUploadType(dialog) {
+        if (!dialog) return isNoticePage() ? 'notice' : 'knowledge';
+        var text = normalizedText(dialog);
+        if (text.indexOf('添加公告') !== -1 || text.indexOf('编辑公告') !== -1 || isNoticePage()) {
+          return 'notice';
+        }
+        return 'knowledge';
       }
 
       function toolbarSignal(button) {
@@ -347,6 +366,7 @@
             Array.prototype.forEach.call(dialog.querySelectorAll('[data-xboard-knowledge-image-upload-fallback="1"]'), function (fallback) {
               fallback.remove();
             });
+            mountNoticeImageUrlUploads(dialog);
             return;
           }
 
@@ -369,6 +389,89 @@
             ].join(';');
             toolbars[0].appendChild(fallback);
           }
+
+          mountNoticeImageUrlUploads(dialog);
+        });
+      }
+
+      function inputSignal(input) {
+        var labelText = '';
+        if (input.id) {
+          var label = document.querySelector('label[for="' + input.id.replace(/"/g, '\\"') + '"]');
+          labelText = normalizedText(label);
+        }
+        var wrapper = input.closest ? input.closest('label,.ant-form-item,.arco-form-item,.n-form-item,.el-form-item,.form-item,.form-group') : null;
+        return [
+          labelText,
+          normalizedText(wrapper),
+          input.getAttribute('name'),
+          input.getAttribute('id'),
+          input.getAttribute('placeholder'),
+          input.getAttribute('aria-label')
+        ].join(' ').toLowerCase();
+      }
+
+      function isNoticeImageUrlInput(input) {
+        if (!input || !input.matches || !input.matches('input')) return false;
+        var type = String(input.getAttribute('type') || 'text').toLowerCase();
+        if (['hidden', 'file', 'checkbox', 'radio', 'submit', 'button'].indexOf(type) !== -1) return false;
+        var signal = inputSignal(input);
+        if (signal.indexOf('img_url') !== -1 || signal.indexOf('image_url') !== -1) return true;
+        return (signal.indexOf('图片') !== -1 || signal.indexOf('封面') !== -1 || signal.indexOf('image') !== -1 || signal.indexOf('cover') !== -1)
+          && (signal.indexOf('url') !== -1 || signal.indexOf('链接') !== -1 || signal.indexOf('地址') !== -1);
+      }
+
+      function setInputValue(input, value) {
+        var descriptor = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+        if (descriptor && descriptor.set) {
+          descriptor.set.call(input, value);
+        } else {
+          input.value = value;
+        }
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        input.focus();
+      }
+
+      function createUrlUploadButton(input) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = '上传图片';
+        button.setAttribute('data-xboard-notice-image-url-upload', '1');
+        button.style.cssText = [
+          'margin-left:8px',
+          'height:32px',
+          'padding:0 10px',
+          'border:1px solid #cbd5e1',
+          'border-radius:4px',
+          'background:#fff',
+          'color:#2563eb',
+          'font-size:13px',
+          'cursor:pointer',
+          'white-space:nowrap'
+        ].join(';');
+        button.__xboardUrlInput = input;
+        return button;
+      }
+
+      function mountNoticeImageUrlUploads(dialog) {
+        if (dialogUploadType(dialog) !== 'notice') return;
+        Array.prototype.forEach.call(dialog.querySelectorAll('input'), function (input) {
+          if (!visible(input) || !isNoticeImageUrlInput(input)) return;
+          if (input.getAttribute('data-xboard-notice-image-url-bound') === '1') return;
+          input.setAttribute('data-xboard-notice-image-url-bound', '1');
+
+          var button = createUrlUploadButton(input);
+          var parent = input.parentElement;
+          if (parent && parent.style) {
+            var display = window.getComputedStyle(parent).display;
+            if (display !== 'flex' && display !== 'inline-flex') {
+              parent.style.display = 'flex';
+              parent.style.alignItems = 'center';
+              parent.style.gap = parent.style.gap || '8px';
+            }
+          }
+          input.insertAdjacentElement('afterend', button);
         });
       }
 
@@ -444,7 +547,7 @@
         var editor = getFocusedMonacoEditor();
         if (editor && typeof editor.executeEdits === 'function' && typeof editor.getSelection === 'function') {
           editor.focus();
-          editor.executeEdits('knowledge-image-upload', [{
+          editor.executeEdits('admin-image-upload', [{
             range: editor.getSelection(),
             text: '\n' + markdown + '\n',
             forceMoveMarkers: true
@@ -471,7 +574,8 @@
       function uploadImage(file) {
         var formData = new FormData();
         formData.append('image', file);
-        return apiFetch('/knowledge/upload-image', {
+        var type = dialogUploadType(state.activeDialog);
+        return apiFetch('/' + type + '/upload-image', {
           method: 'POST',
           body: formData
         });
@@ -484,7 +588,11 @@
           if (state.activeTrigger.getAttribute('data-xboard-knowledge-image-upload-fallback') === '1') {
             state.activeTrigger.textContent = '上传图片';
           }
+          if (state.activeTrigger.getAttribute('data-xboard-notice-image-url-upload') === '1') {
+            state.activeTrigger.textContent = '上传图片';
+          }
         }
+        state.activeUrlInput = null;
         if (state.input) state.input.value = '';
       }
 
@@ -496,9 +604,20 @@
           if (state.activeTrigger.getAttribute('data-xboard-knowledge-image-upload-fallback') === '1') {
             state.activeTrigger.textContent = '上传中...';
           }
+          if (state.activeTrigger.getAttribute('data-xboard-notice-image-url-upload') === '1') {
+            state.activeTrigger.textContent = '上传中...';
+          }
         }
 
         uploadImage(file).then(function (data) {
+          if (state.activeUrlInput) {
+            var url = data.absolute_url || data.url;
+            if (!url) throw new Error('上传成功，但未返回图片地址');
+            setInputValue(state.activeUrlInput, url);
+            notify('success', '图片已上传并填入公告图片地址');
+            return;
+          }
+
           var markdown = data.markdown || (data.url ? '![图片](' + data.url + ')' : '');
           if (!markdown) throw new Error('上传成功，但未返回图片地址');
           if (insertMarkdown(markdown)) {
@@ -530,7 +649,7 @@
       function handleToolbarClick(event) {
         markImageUploadButtons();
         var button = event.target && event.target.closest
-          ? event.target.closest('[data-xboard-knowledge-image-upload="1"]')
+          ? event.target.closest('[data-xboard-knowledge-image-upload="1"],[data-xboard-notice-image-url-upload="1"]')
           : null;
         if (!button) return;
         var dialog = findKnowledgeDialog(button);
@@ -541,6 +660,9 @@
         event.stopImmediatePropagation();
         state.activeDialog = dialog;
         state.activeTrigger = button;
+        state.activeUrlInput = button.getAttribute('data-xboard-notice-image-url-upload') === '1'
+          ? button.__xboardUrlInput || (button.previousElementSibling && button.previousElementSibling.matches('input') ? button.previousElementSibling : null)
+          : null;
         state.activeElement = document.activeElement;
         state.activeEditor = getFocusedMonacoEditor() || state.activeEditor;
         ensureUploadInput().click();

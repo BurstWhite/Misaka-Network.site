@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\ThemeService;
 use App\Services\UpdateService;
+use Database\Seeders\KnowledgeTutorialSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use App\Services\Plugin\PluginManager;
@@ -47,6 +48,12 @@ class XboardUpdate extends Command
         $this->info('正在检查并安装默认插件...');
         PluginManager::installDefaultPlugins();
         $this->info('默认插件检查完成');
+        $this->info('正在同步默认知识库教程...');
+        Artisan::call('db:seed', [
+            '--class' => KnowledgeTutorialSeeder::class,
+            '--force' => true,
+        ]);
+        $this->info(Artisan::output());
         $updateService = new UpdateService();
         $updateService->updateVersionCache();
         $themeService = app(ThemeService::class);

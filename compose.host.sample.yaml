@@ -1,6 +1,8 @@
 services:
   xboard:
-    image: ghcr.io/cedar2025/xboard:latest
+    image: misaka-network-xboard:latest
+    build:
+      context: .
     restart: unless-stopped
     network_mode: host
     volumes:

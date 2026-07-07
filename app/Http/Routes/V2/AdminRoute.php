@@ -165,6 +165,7 @@ class AdminRoute
                 $router->post('/drop', [NoticeController::class, 'drop']);
                 $router->post('/show', [NoticeController::class, 'show']);
                 $router->post('/sort', [NoticeController::class, 'sort']);
+                $router->post('/upload-image', [NoticeController::class, 'uploadImage']);
             });
 
             // Ticket
