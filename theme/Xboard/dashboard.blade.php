@@ -257,38 +257,28 @@
   <style>
     body.xboard-auth-page {
       margin: 0;
-      background:
-        radial-gradient(circle at 24% 18%, rgba(147, 197, 253, .2), transparent 32%),
-        radial-gradient(circle at 76% 78%, rgba(125, 211, 252, .18), transparent 34%),
-        linear-gradient(135deg, #f8fbff 0%, #edf6ff 50%, #f0fdfa 100%);
+      background: #f7fafc;
       color: #0f172a;
     }
 
     body.xboard-auth-page .xboard-auth-shell {
       position: relative;
       min-height: 100vh;
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: stretch !important;
-      justify-content: flex-start !important;
-      padding: 0 clamp(24px, 6vw, 72px) 36px !important;
-      overflow-x: hidden;
-      overflow-y: auto;
-      background:
-        radial-gradient(circle at 24% 18%, rgba(147, 197, 253, .18), transparent 32%),
-        radial-gradient(circle at 76% 78%, rgba(125, 211, 252, .16), transparent 34%),
-        linear-gradient(135deg, #f8fbff 0%, #edf6ff 50%, #f0fdfa 100%);
+      padding: 28px;
+      overflow: hidden;
+      background-color: #f7fafc;
     }
 
 	    body.xboard-auth-page .xboard-auth-shell::before {
 	      content: "";
-	      display: block;
-	      flex: 0 0 min(50vh, 610px);
-	      width: 100%;
-	      margin: 0 auto clamp(26px, 4vw, 58px);
-	      background: var(--xboard-client-bg-image, linear-gradient(135deg, rgba(191, 219, 254, .42), rgba(224, 242, 254, .86) 52%, rgba(204, 251, 241, .72))) center center / cover no-repeat;
+	      position: absolute;
+	      inset: 0;
+	      background:
+	        linear-gradient(135deg, rgba(248, 250, 252, .96), rgba(239, 246, 255, .9) 54%, rgba(236, 253, 245, .88)),
+	        var(--xboard-client-bg-image, none);
 	      background-position: center;
 	      background-size: cover;
+	      backdrop-filter: blur(1px);
 	    }
 
     body.xboard-auth-page .xboard-auth-shell > * {
@@ -297,19 +287,17 @@
     }
 
     body.xboard-auth-page .xboard-auth-card {
-      width: 100% !important;
-      max-width: none !important;
-      margin: 0 !important;
-      border: 0 !important;
-      border-radius: 0 !important;
-      box-shadow: none !important;
-      background: transparent !important;
-      overflow: visible;
-      backdrop-filter: none;
+      width: min(440px, calc(100vw - 32px)) !important;
+      border: 1px solid rgba(148, 163, 184, .26) !important;
+      border-radius: 18px !important;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, .14) !important;
+      background: rgba(255, 255, 255, .94) !important;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
     }
 
     body.xboard-auth-page .xboard-auth-card .n-card__content {
-      padding: 0 !important;
+      padding: 34px 34px 24px !important;
     }
 
     body.xboard-auth-page .xboard-auth-brand {
@@ -317,16 +305,19 @@
       flex-direction: column;
       align-items: center;
       gap: 8px;
-      margin-bottom: 28px !important;
+      margin-bottom: 24px !important;
       text-align: center;
     }
 
     body.xboard-auth-page .xboard-auth-logo {
-      display: none !important;
+      width: auto !important;
+      max-width: min(180px, 58vw) !important;
+      max-height: 64px !important;
+      margin: 0 !important;
+      object-fit: contain;
     }
 
     body.xboard-auth-page .xboard-auth-title {
-      display: none !important;
       margin: 0;
       color: #0f172a;
       font-size: 28px;
@@ -341,14 +332,8 @@
       line-height: 1.55 !important;
     }
 
-	    body.xboard-auth-page .xboard-auth-card .n-form,
-	    body.xboard-auth-page .xboard-auth-card form {
-	      width: 100% !important;
-	      max-width: none !important;
-	    }
-
 	    body.xboard-auth-page .xboard-auth-card input {
-	      min-height: 48px;
+	      min-height: 42px;
 	    }
 
 	    body.xboard-auth-page .xboard-auth-card .n-input {
@@ -362,9 +347,6 @@
 	      --n-border-focus: 1px solid #2563eb !important;
 	      --n-box-shadow-focus: 0 0 0 2px rgba(37, 99, 235, .16) !important;
 	      background: rgba(255, 255, 255, .96) !important;
-	      width: 100% !important;
-	      border-radius: 14px !important;
-	      box-shadow: 0 8px 28px rgba(42, 74, 118, .08) !important;
 	    }
 
 	    body.xboard-auth-page .xboard-auth-card .n-input__input-el,
@@ -374,30 +356,26 @@
 	    }
 
 	    html.dark body.xboard-auth-page {
-	      background:
-	        radial-gradient(circle at 28% 22%, rgba(37, 99, 235, .22), transparent 34%),
-	        radial-gradient(circle at 76% 78%, rgba(20, 184, 166, .16), transparent 34%),
-	        linear-gradient(135deg, #0f172a 0%, #172033 52%, #082f49 100%);
+	      background: #0f172a;
 	      color: #e5e7eb;
 	    }
 
 	    html.dark body.xboard-auth-page .xboard-auth-shell {
-	      background:
-	        radial-gradient(circle at 28% 22%, rgba(37, 99, 235, .22), transparent 34%),
-	        radial-gradient(circle at 76% 78%, rgba(20, 184, 166, .16), transparent 34%),
-	        linear-gradient(135deg, #0f172a 0%, #172033 52%, #082f49 100%);
+	      background-color: #0f172a;
 	    }
 
 	    html.dark body.xboard-auth-page .xboard-auth-shell::before {
-	      background: var(--xboard-client-bg-image, linear-gradient(135deg, rgba(30, 64, 175, .48), rgba(30, 41, 59, .84) 52%, rgba(20, 83, 45, .58))) center center / cover no-repeat;
+	      background:
+	        linear-gradient(135deg, rgba(15, 23, 42, .9), rgba(30, 41, 59, .82) 52%, rgba(20, 83, 45, .58)),
+	        var(--xboard-client-bg-image, none);
 	      background-position: center;
 	      background-size: cover;
 	    }
 
 	    html.dark body.xboard-auth-page .xboard-auth-card {
-	      border-color: transparent !important;
-	      background: transparent !important;
-	      box-shadow: none !important;
+	      border-color: rgba(148, 163, 184, .22) !important;
+	      background: rgba(15, 23, 42, .9) !important;
+	      box-shadow: 0 28px 80px rgba(0, 0, 0, .38) !important;
 	    }
 
 	    html.dark body.xboard-auth-page .xboard-auth-title {
@@ -428,9 +406,7 @@
 	    }
 
 	    body.xboard-auth-page .xboard-auth-card button {
-	      min-height: 54px;
-	      border-radius: 16px;
-	      width: 100%;
+	      border-radius: 8px;
 	    }
 
 	    body.xboard-client-page {
@@ -561,17 +537,13 @@
 
     @media (max-width: 640px) {
       body.xboard-auth-page .xboard-auth-shell {
-        padding: 0 14px 24px !important;
-        align-items: stretch !important;
-      }
-
-      body.xboard-auth-page .xboard-auth-shell::before {
-        flex-basis: 34vh;
-        margin-bottom: 24px;
+        padding: 18px;
+        align-items: flex-start !important;
+        padding-top: 42px;
       }
 
       body.xboard-auth-page .xboard-auth-card .n-card__content {
-        padding: 0 !important;
+        padding: 28px 22px 20px !important;
       }
 
       body.xboard-auth-page .xboard-auth-title {
@@ -620,7 +592,7 @@
 
 	      function syncClientBackground() {
 	        var settings = window.settings || {};
-	        var background = cssUrl(settings.background_url || settings.logo);
+	        var background = cssUrl(settings.background_url);
 	        if (background) {
 	          document.body.style.setProperty('--xboard-client-bg-image', background);
 	        }
