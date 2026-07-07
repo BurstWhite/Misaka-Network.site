@@ -5,6 +5,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no" />
   <title>{{$title}}</title>
+  @php
+    $logoUrl = trim((string) $logo);
+    $backgroundUrl = trim((string) ($theme_config['background_url'] ?? ''));
+    $assetOrigins = [];
+    foreach ([$logoUrl, $backgroundUrl] as $assetUrl) {
+      $parts = parse_url($assetUrl);
+      if (!empty($parts['scheme']) && !empty($parts['host'])) {
+        $origin = $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
+        $assetOrigins[$origin] = $origin;
+      }
+    }
+  @endphp
+  @foreach($assetOrigins as $origin)
+    <link rel="preconnect" href="{{ $origin }}" crossorigin />
+    <link rel="dns-prefetch" href="{{ $origin }}" />
+  @endforeach
+  @if($logoUrl !== '')
+    <link rel="preload" as="image" href="{{ $logoUrl }}" fetchpriority="high" />
+  @endif
   <script>
     (function () {
       var state = {
@@ -250,14 +269,17 @@
       background-color: #f7fafc;
     }
 
-    body.xboard-auth-page .xboard-auth-shell::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(135deg, rgba(248, 250, 252, .96), rgba(239, 246, 255, .9) 54%, rgba(236, 253, 245, .88));
-      backdrop-filter: blur(1px);
-    }
+	    body.xboard-auth-page .xboard-auth-shell::before {
+	      content: "";
+	      position: absolute;
+	      inset: 0;
+	      background:
+	        linear-gradient(135deg, rgba(248, 250, 252, .96), rgba(239, 246, 255, .9) 54%, rgba(236, 253, 245, .88)),
+	        var(--xboard-client-bg-image, none);
+	      background-position: center;
+	      background-size: cover;
+	      backdrop-filter: blur(1px);
+	    }
 
     body.xboard-auth-page .xboard-auth-shell > * {
       position: relative;
@@ -310,13 +332,130 @@
       line-height: 1.55 !important;
     }
 
-    body.xboard-auth-page .xboard-auth-card input {
-      min-height: 42px;
-    }
+	    body.xboard-auth-page .xboard-auth-card input {
+	      min-height: 42px;
+	    }
 
-    body.xboard-auth-page .xboard-auth-card button {
-      border-radius: 8px;
-    }
+	    body.xboard-auth-page .xboard-auth-card .n-input {
+	      --n-color: rgba(255, 255, 255, .96) !important;
+	      --n-color-focus: #ffffff !important;
+	      --n-color-disabled: rgba(241, 245, 249, .9) !important;
+	      --n-text-color: #0f172a !important;
+	      --n-placeholder-color: #94a3b8 !important;
+	      --n-border: 1px solid rgba(148, 163, 184, .48) !important;
+	      --n-border-hover: 1px solid rgba(59, 130, 246, .72) !important;
+	      --n-border-focus: 1px solid #2563eb !important;
+	      --n-box-shadow-focus: 0 0 0 2px rgba(37, 99, 235, .16) !important;
+	      background: rgba(255, 255, 255, .96) !important;
+	    }
+
+	    body.xboard-auth-page .xboard-auth-card .n-input__input-el,
+	    body.xboard-auth-page .xboard-auth-card .n-input__textarea-el {
+	      color: #0f172a !important;
+	      -webkit-text-fill-color: #0f172a !important;
+	    }
+
+	    html.dark body.xboard-auth-page {
+	      background: #0f172a;
+	      color: #e5e7eb;
+	    }
+
+	    html.dark body.xboard-auth-page .xboard-auth-shell {
+	      background-color: #0f172a;
+	    }
+
+	    html.dark body.xboard-auth-page .xboard-auth-shell::before {
+	      background:
+	        linear-gradient(135deg, rgba(15, 23, 42, .9), rgba(30, 41, 59, .82) 52%, rgba(20, 83, 45, .58)),
+	        var(--xboard-client-bg-image, none);
+	      background-position: center;
+	      background-size: cover;
+	    }
+
+	    html.dark body.xboard-auth-page .xboard-auth-card {
+	      border-color: rgba(148, 163, 184, .22) !important;
+	      background: rgba(15, 23, 42, .9) !important;
+	      box-shadow: 0 28px 80px rgba(0, 0, 0, .38) !important;
+	    }
+
+	    html.dark body.xboard-auth-page .xboard-auth-title {
+	      color: #f8fafc;
+	    }
+
+	    html.dark body.xboard-auth-page .xboard-auth-description {
+	      color: #cbd5e1 !important;
+	    }
+
+	    html.dark body.xboard-auth-page .xboard-auth-card .n-input {
+	      --n-color: rgba(15, 23, 42, .78) !important;
+	      --n-color-focus: rgba(15, 23, 42, .96) !important;
+	      --n-color-disabled: rgba(30, 41, 59, .72) !important;
+	      --n-text-color: #f8fafc !important;
+	      --n-placeholder-color: #94a3b8 !important;
+	      --n-border: 1px solid rgba(148, 163, 184, .38) !important;
+	      --n-border-hover: 1px solid rgba(96, 165, 250, .72) !important;
+	      --n-border-focus: 1px solid #60a5fa !important;
+	      --n-box-shadow-focus: 0 0 0 2px rgba(96, 165, 250, .18) !important;
+	      background: rgba(15, 23, 42, .78) !important;
+	    }
+
+	    html.dark body.xboard-auth-page .xboard-auth-card .n-input__input-el,
+	    html.dark body.xboard-auth-page .xboard-auth-card .n-input__textarea-el {
+	      color: #f8fafc !important;
+	      -webkit-text-fill-color: #f8fafc !important;
+	    }
+
+	    body.xboard-auth-page .xboard-auth-card button {
+	      border-radius: 8px;
+	    }
+
+	    body.xboard-client-page {
+	      min-height: 100vh;
+	      background-color: #f8fafc;
+	      background-image:
+	        linear-gradient(135deg, rgba(248, 250, 252, .94), rgba(239, 246, 255, .86) 48%, rgba(236, 253, 245, .78)),
+	        var(--xboard-client-bg-image, url('/theme/{{$theme}}/assets/images/background.svg'));
+	      background-attachment: fixed;
+	      background-position: center;
+	      background-size: cover;
+	    }
+
+	    html.dark body.xboard-client-page {
+	      background-color: #0f172a;
+	      background-image:
+	        linear-gradient(135deg, rgba(15, 23, 42, .92), rgba(30, 41, 59, .84) 50%, rgba(6, 78, 59, .66)),
+	        var(--xboard-client-bg-image, url('/theme/{{$theme}}/assets/images/background.svg'));
+	    }
+
+	    body.xboard-client-page #app,
+	    body.xboard-client-page .n-layout,
+	    body.xboard-client-page .n-layout-scroll-container,
+	    body.xboard-client-page .n-layout-content {
+	      background: transparent !important;
+	    }
+
+	    body.xboard-client-page .n-card {
+	      border-radius: 16px !important;
+	      overflow: hidden;
+	    }
+
+	    body.xboard-client-page .n-alert,
+	    body.xboard-client-page .n-button,
+	    body.xboard-client-page .n-tag,
+	    body.xboard-client-page .n-input,
+	    body.xboard-client-page .n-base-selection {
+	      border-radius: 12px !important;
+	    }
+
+	    body.xboard-client-page .xboard-notice-background-dialog {
+	      background-position: center !important;
+	      background-size: cover !important;
+	      overflow: hidden;
+	    }
+
+	    body.xboard-client-page .xboard-notice-background-dialog .markdown-body {
+	      background: transparent !important;
+	    }
 
     @media (max-width: 640px) {
       body.xboard-auth-page .xboard-auth-shell {
@@ -363,11 +502,32 @@
     }
   </script>
   <div id="app"></div>
-  <script>
-    (function () {
-      function isAuthRoute() {
-        return /^#\/(?:login|register|forgetpassword)(?:[/?#]|$)/.test(window.location.hash || '');
-      }
+	  <script>
+	    (function () {
+	      var noticeItems = [];
+
+	      function cssUrl(value) {
+	        value = String(value || '').trim();
+	        if (!value) return '';
+	        return 'url("' + value.replace(/"/g, '\\"') + '")';
+	      }
+
+	      function syncClientBackground() {
+	        var settings = window.settings || {};
+	        var background = cssUrl(settings.background_url);
+	        if (background) {
+	          document.body.style.setProperty('--xboard-client-bg-image', background);
+	        }
+	      }
+
+	      function isAuthRoute() {
+	        return /^#\/(?:login|register|forgetpassword)(?:[/?#]|$)/.test(window.location.hash || '');
+	      }
+
+	      function isClientRoute() {
+	        var hash = window.location.hash || '';
+	        return hash && !isAuthRoute();
+	      }
 
       function closestCard(element) {
         var node = element;
@@ -389,7 +549,7 @@
         return null;
       }
 
-      function ensureBrand(card) {
+	      function ensureBrand(card) {
         var settings = window.settings || {};
         var title = settings.title || document.title || 'XBoard';
         var logo = card.querySelector('img');
@@ -398,9 +558,12 @@
         if (!brand) return;
 
         brand.classList.add('xboard-auth-brand');
-        if (logo) {
-          logo.classList.add('xboard-auth-logo');
-          if (!brand.querySelector('[data-xboard-auth-title="1"]')) {
+	        if (logo) {
+	          logo.classList.add('xboard-auth-logo');
+	          logo.loading = 'eager';
+	          logo.decoding = 'async';
+	          if ('fetchPriority' in logo) logo.fetchPriority = 'high';
+	          if (!brand.querySelector('[data-xboard-auth-title="1"]')) {
             var titleNode = document.createElement('div');
             titleNode.setAttribute('data-xboard-auth-title', '1');
             titleNode.className = 'xboard-auth-title';
@@ -416,10 +579,12 @@
         if (description) description.classList.add('xboard-auth-description');
       }
 
-      function enhanceAuthPage() {
-        var auth = isAuthRoute();
-        document.body.classList.toggle('xboard-auth-page', auth);
-        if (!auth) {
+	      function enhanceAuthPage() {
+	        var auth = isAuthRoute();
+	        document.body.classList.toggle('xboard-auth-page', auth);
+	        document.body.classList.toggle('xboard-client-page', !auth && isClientRoute());
+	        syncClientBackground();
+	        if (!auth) {
           Array.prototype.forEach.call(document.querySelectorAll('.xboard-auth-shell'), function (shell) {
             shell.classList.remove('xboard-auth-shell');
           });
@@ -431,15 +596,90 @@
         card.classList.add('xboard-auth-card');
         var shell = card.closest('.wh-full') || card.parentElement;
         if (shell) shell.classList.add('xboard-auth-shell');
-        ensureBrand(card);
-      }
+	        ensureBrand(card);
+	      }
 
-      document.addEventListener('DOMContentLoaded', function () {
-        enhanceAuthPage();
-        new MutationObserver(enhanceAuthPage).observe(document.body, { childList: true, subtree: true });
-        window.addEventListener('hashchange', function () {
-          setTimeout(enhanceAuthPage, 120);
-        });
+	      function rememberNotices(body) {
+	        var data = body && body.data;
+	        if (data && data.data) data = data.data;
+	        if (!Array.isArray(data)) return;
+	        noticeItems = data.filter(function (item) {
+	          return item && item.img_url;
+	        });
+	        setTimeout(applyNoticeBackgrounds, 60);
+	      }
+
+	      function patchNoticeResponseCapture() {
+	        if (window.__xboardNoticeResponseCapture) return;
+	        window.__xboardNoticeResponseCapture = true;
+
+	        if (window.XMLHttpRequest) {
+	          var originalOpen = XMLHttpRequest.prototype.open;
+	          var originalSend = XMLHttpRequest.prototype.send;
+	          XMLHttpRequest.prototype.open = function (method, url) {
+	            this.__xboardNoticeUrl = String(url || '');
+	            return originalOpen.apply(this, arguments);
+	          };
+	          XMLHttpRequest.prototype.send = function () {
+	            var xhr = this;
+	            xhr.addEventListener('loadend', function () {
+	              if (String(xhr.__xboardNoticeUrl || '').indexOf('/user/notice/fetch') === -1) return;
+	              try {
+	                rememberNotices(JSON.parse(xhr.responseText));
+	              } catch (e) {}
+	            });
+	            return originalSend.apply(this, arguments);
+	          };
+	        }
+
+	        if (window.fetch) {
+	          var originalFetch = window.fetch;
+	          window.fetch = function (input) {
+	            var url = typeof input === 'string' ? input : (input && input.url) || '';
+	            return originalFetch.apply(this, arguments).then(function (response) {
+	              if (String(url).indexOf('/user/notice/fetch') !== -1) {
+	                response.clone().json().then(rememberNotices).catch(function () {});
+	              }
+	              return response;
+	            });
+	          };
+	        }
+	      }
+
+	      function textOf(element) {
+	        return String((element && (element.innerText || element.textContent)) || '').replace(/\s+/g, ' ');
+	      }
+
+	      function applyNoticeBackgrounds() {
+	        if (!noticeItems.length) return;
+	        var dialogs = Array.prototype.slice.call(document.querySelectorAll('.n-modal, .n-card, [role="dialog"]'));
+	        dialogs.forEach(function (dialog) {
+	          if (!dialog || dialog.getAttribute('data-xboard-notice-background-applied') === '1') return;
+	          var text = textOf(dialog);
+	          var notice = noticeItems.find(function (item) {
+	            return item.title && text.indexOf(item.title) !== -1;
+	          });
+	          if (!notice || !notice.img_url) return;
+	          var card = dialog.classList && dialog.classList.contains('n-card') ? dialog : dialog.querySelector('.n-card') || dialog;
+	          card.classList.add('xboard-notice-background-dialog');
+	          card.setAttribute('data-xboard-notice-background-applied', '1');
+	          card.style.backgroundImage = [
+	            'linear-gradient(135deg, rgba(255,255,255,.92), rgba(255,247,237,.86))',
+	            cssUrl(notice.img_url)
+	          ].join(',');
+	        });
+	      }
+
+	      document.addEventListener('DOMContentLoaded', function () {
+	        patchNoticeResponseCapture();
+	        enhanceAuthPage();
+	        new MutationObserver(function () {
+	          enhanceAuthPage();
+	          applyNoticeBackgrounds();
+	        }).observe(document.body, { childList: true, subtree: true });
+	        window.addEventListener('hashchange', function () {
+	          setTimeout(enhanceAuthPage, 120);
+	        });
       });
     })();
   </script>

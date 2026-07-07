@@ -92,12 +92,13 @@
         activeElement: null,
         editors: [],
         monacoPatched: false,
-        appleModal: null,
-        appleAccounts: [],
-        appleActiveId: null,
-        activeUrlInput: null,
-        activeMirrorUrlInput: null
-      };
+	        appleModal: null,
+	        appleAccounts: [],
+	        appleActiveId: null,
+	        activeUrlInput: null,
+	        activeMirrorUrlInput: null,
+	        noticeItems: []
+	      };
 
       function getAccessToken() {
         var match = document.cookie.match(/(?:^|;\s*)access_token=([^;]+)/);
@@ -145,9 +146,21 @@
         }
       }
 
-      function isNoticeSaveUrl(url) {
-        return /\/notice\/(?:save|update)(?:\?|$)/.test(String(url || ''));
-      }
+	      function isNoticeSaveUrl(url) {
+	        return /\/notice\/(?:save|update)(?:\?|$)/.test(String(url || ''));
+	      }
+
+	      function isNoticeFetchUrl(url) {
+	        return /\/notice\/fetch(?:\?|$)/.test(String(url || ''));
+	      }
+
+	      function rememberNoticeItems(body) {
+	        var data = body && body.data;
+	        if (data && data.data) data = data.data;
+	        if (Array.isArray(data)) {
+	          state.noticeItems = data;
+	        }
+	      }
 
       function findCurrentNoticeBackgroundInput() {
         var dialog = findKnowledgeDialog(document.activeElement);
@@ -209,16 +222,23 @@
           var originalOpen = XMLHttpRequest.prototype.open;
           var originalSend = XMLHttpRequest.prototype.send;
           var originalSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
-          XMLHttpRequest.prototype.open = function (method, url) {
-            this.__xboardAdminUrl = String(url || '');
-            return originalOpen.apply(this, arguments);
-          };
-          XMLHttpRequest.prototype.send = function (body) {
-            if (isNoticeSaveUrl(this.__xboardAdminUrl)) {
-              body = injectNoticeImageUrl(body);
-            }
-            return originalSend.call(this, body);
-          };
+	          XMLHttpRequest.prototype.open = function (method, url) {
+	            this.__xboardAdminUrl = String(url || '');
+	            return originalOpen.apply(this, arguments);
+	          };
+	          XMLHttpRequest.prototype.send = function (body) {
+	            if (isNoticeSaveUrl(this.__xboardAdminUrl)) {
+	              body = injectNoticeImageUrl(body);
+	            }
+	            if (isNoticeFetchUrl(this.__xboardAdminUrl)) {
+	              this.addEventListener('loadend', function () {
+	                try {
+	                  rememberNoticeItems(JSON.parse(this.responseText));
+	                } catch (e) {}
+	              });
+	            }
+	            return originalSend.call(this, body);
+	          };
           XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
             if (String(name || '').toLowerCase() === 'authorization') {
               rememberAuthHeader(String(value || ''));
@@ -231,14 +251,19 @@
           var originalFetch = window.fetch;
           window.fetch = function (input, init) {
             readFetchAuthHeader(input, init);
-            var url = typeof input === 'string' ? input : (input && input.url) || '';
-            if (isNoticeSaveUrl(url) && init && Object.prototype.hasOwnProperty.call(init, 'body')) {
-              init = Object.assign({}, init, { body: injectNoticeImageUrl(init.body) });
-            }
-            return originalFetch.apply(this, arguments);
-          };
-        }
-      }
+	            var url = typeof input === 'string' ? input : (input && input.url) || '';
+	            if (isNoticeSaveUrl(url) && init && Object.prototype.hasOwnProperty.call(init, 'body')) {
+	              init = Object.assign({}, init, { body: injectNoticeImageUrl(init.body) });
+	            }
+	            return originalFetch.apply(this, arguments).then(function (response) {
+	              if (isNoticeFetchUrl(url)) {
+	                response.clone().json().then(rememberNoticeItems).catch(function () {});
+	              }
+	              return response;
+	            });
+	          };
+	        }
+	      }
 
       function apiFetch(path, options) {
         var securePath = window.settings && window.settings.secure_path ? window.settings.secure_path : '';
@@ -503,13 +528,39 @@
           || signal.indexOf('公告背景') !== -1;
       }
 
-      function findNoticeImageUrlInput(dialog) {
-        var inputs = Array.prototype.slice.call((dialog || document).querySelectorAll('input'));
-        for (var i = 0; i < inputs.length; i++) {
-          if (isNoticeImageField(inputs[i]) || isNoticeImageUrlInput(inputs[i])) return inputs[i];
-        }
-        return null;
-      }
+	      function findNoticeImageUrlInput(dialog) {
+	        var inputs = Array.prototype.slice.call((dialog || document).querySelectorAll('input'));
+	        for (var i = 0; i < inputs.length; i++) {
+	          if (isNoticeImageField(inputs[i]) || isNoticeImageUrlInput(inputs[i])) return inputs[i];
+	        }
+	        return null;
+	      }
+
+	      function findNoticeTitleValue(dialog) {
+	        var inputs = Array.prototype.slice.call((dialog || document).querySelectorAll('input')).filter(visible);
+	        for (var i = 0; i < inputs.length; i++) {
+	          if (inputs[i].closest && inputs[i].closest('[data-xboard-notice-background-panel="1"]')) continue;
+	          var signal = inputSignal(inputs[i]);
+	          if (signal.indexOf('标题') !== -1 || signal.indexOf('title') !== -1) {
+	            return String(inputs[i].value || '').trim();
+	          }
+	        }
+	        for (var j = 0; j < inputs.length; j++) {
+	          if (inputs[j].closest && inputs[j].closest('[data-xboard-notice-background-panel="1"]')) continue;
+	          var value = String(inputs[j].value || '').trim();
+	          if (value) return value;
+	        }
+	        return '';
+	      }
+
+	      function inferNoticeImageUrl(dialog) {
+	        var title = findNoticeTitleValue(dialog);
+	        if (!title || !state.noticeItems.length) return '';
+	        var matched = state.noticeItems.find(function (item) {
+	          return item && String(item.title || '').trim() === title;
+	        });
+	        return matched && matched.img_url ? String(matched.img_url) : '';
+	      }
 
       function setInputValue(input, value) {
         var descriptor = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
@@ -539,8 +590,8 @@
         preview.style.display = '';
       }
 
-      function createUrlUploadButton(input, mirrorInput) {
-        var button = document.createElement('button');
+	      function createUrlUploadButton(input, mirrorInput) {
+	        var button = document.createElement('button');
         button.type = 'button';
         button.textContent = '上传图片';
         button.setAttribute('data-xboard-notice-image-url-upload', '1');
@@ -557,13 +608,92 @@
           'white-space:nowrap'
         ].join(';');
         button.__xboardUrlInput = input;
-        button.__xboardMirrorUrlInput = mirrorInput || null;
-        return button;
-      }
+	        button.__xboardMirrorUrlInput = mirrorInput || null;
+	        return button;
+	      }
 
-      function ensureNoticeBackgroundPanel(dialog, mirrorInput) {
-        var existing = dialog.querySelector('[data-xboard-notice-background-panel="1"]');
-        if (existing) {
+	      function closestFormItem(element) {
+	        if (!element || !element.closest) return null;
+	        return element.closest('.ant-form-item,.arco-form-item,.n-form-item,.el-form-item,.form-item,.form-group,label') || element.parentElement;
+	      }
+
+	      function findNoticeContentAnchor(dialog) {
+	        var fields = Array.prototype.slice.call(dialog.querySelectorAll('textarea,.monaco-editor,.CodeMirror,[contenteditable="true"],.cm-editor'));
+	        for (var i = 0; i < fields.length; i++) {
+	          if (!visible(fields[i])) continue;
+	          var item = closestFormItem(fields[i]);
+	          return item || fields[i];
+	        }
+	        return null;
+	      }
+
+	      function findNoticeSubmitButton(dialog) {
+	        var buttons = Array.prototype.slice.call(dialog.querySelectorAll('button,[role="button"]')).filter(visible);
+	        var blocked = /取消|关闭|返回|上传|清除|删除|预览|Apple ID/i;
+	        var preferred = /发布公告|保存公告|保存|确定|确认|提交|发布|新增|添加/i;
+	        for (var i = buttons.length - 1; i >= 0; i--) {
+	          var button = buttons[i];
+	          if (button.getAttribute('data-xboard-notice-publish-button') === '1') continue;
+	          var text = normalizedText(button);
+	          if (!text || blocked.test(text)) continue;
+	          if (preferred.test(text) || String(button.getAttribute('type') || '').toLowerCase() === 'submit') {
+	            return button;
+	          }
+	        }
+	        return null;
+	      }
+
+	      function ensureNoticePublishActions(dialog) {
+	        if (!dialog || dialogUploadType(dialog) !== 'notice') return;
+	        var existing = dialog.querySelector('[data-xboard-notice-actions="1"]');
+	        var originalButton = findNoticeSubmitButton(dialog);
+	        if (existing) {
+	          var existingButton = existing.querySelector('[data-xboard-notice-publish-button="1"]');
+	          if (existingButton) existingButton.textContent = /编辑公告/.test(normalizedText(dialog)) ? '保存公告' : '发布公告';
+	          return;
+	        }
+
+	        var actions = document.createElement('div');
+	        actions.setAttribute('data-xboard-notice-actions', '1');
+	        actions.style.cssText = [
+	          'position:sticky',
+	          'bottom:0',
+	          'z-index:20',
+	          'display:flex',
+	          'align-items:center',
+	          'justify-content:flex-end',
+	          'gap:10px',
+	          'margin:16px -2px -2px',
+	          'padding:12px 0 0',
+	          'background:linear-gradient(180deg, rgba(255,255,255,.72), #fff 34%)'
+	        ].join(';');
+	        actions.innerHTML = [
+	          '<button data-xboard-notice-publish-button="1" type="button" style="height:38px;min-width:112px;border:0;border-radius:8px;background:#111827;color:#fff;font-size:14px;font-weight:700;box-shadow:0 10px 22px rgba(15,23,42,.16);cursor:pointer">',
+	          /编辑公告/.test(normalizedText(dialog)) ? '保存公告' : '发布公告',
+	          '</button>'
+	        ].join('');
+
+	        actions.querySelector('button').addEventListener('click', function () {
+	          var button = findNoticeSubmitButton(dialog) || originalButton;
+	          if (!button) {
+	            notify('error', '未找到原始发布按钮，请刷新后台后重试');
+	            return;
+	          }
+	          button.click();
+	        });
+
+	        var footer = dialog.querySelector('.ant-modal-footer,.arco-modal-footer,.n-card__footer,.el-dialog__footer');
+	        if (footer) {
+	          footer.appendChild(actions);
+	        } else {
+	          var target = dialog.querySelector('form') || dialog.querySelector('.ant-modal-body,.arco-modal-content,.n-card__content,.el-dialog__body') || dialog;
+	          target.appendChild(actions);
+	        }
+	      }
+
+	      function ensureNoticeBackgroundPanel(dialog, mirrorInput) {
+	        var existing = dialog.querySelector('[data-xboard-notice-background-panel="1"]');
+	        if (existing) {
           var existingInput = existing.querySelector('[data-xboard-notice-background-input="1"]');
           if (existingInput && mirrorInput && !existingInput.value && mirrorInput.value) {
             setInputValue(existingInput, mirrorInput.value);
@@ -572,34 +702,33 @@
           return existingInput;
         }
 
-        var panel = document.createElement('div');
-        panel.setAttribute('data-xboard-notice-background-panel', '1');
-        panel.style.cssText = [
-          'margin:0 0 18px',
-          'padding:16px',
-          'border:1px solid #e5e7eb',
-          'border-radius:8px',
-          'background:#fff',
-          'box-shadow:0 8px 22px rgba(15,23,42,.06)',
-          'color:#111827'
-        ].join(';');
-        panel.innerHTML = [
-          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px">',
-          '  <div>',
-          '    <div style="font-weight:700;font-size:15px;line-height:1.35">公告背景图片</div>',
-          '    <div style="margin-top:3px;color:#64748b;font-size:12px;line-height:1.5">用于公告卡片/弹窗展示，上传后会自动保存图片地址。</div>',
-          '  </div>',
-          '</div>',
-          '<div data-xboard-notice-background-row="1" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px">',
-          '  <input data-xboard-notice-background-input="1" type="text" placeholder="上传后自动填入图片地址" style="min-width:0;width:100%;height:36px;border:1px solid #d1d5db;border-radius:6px;padding:0 11px;background:#fff;color:#111827;outline:none">',
-          '</div>',
-          '<img data-xboard-notice-background-preview style="display:none;margin-top:12px;width:220px;max-width:100%;height:96px;border-radius:6px;border:1px solid #e5e7eb;background:#f8fafc;object-fit:cover">'
-        ].join('');
+	        var panel = document.createElement('div');
+	        panel.setAttribute('data-xboard-notice-background-panel', '1');
+	        panel.style.cssText = [
+	          'margin:14px 0 12px',
+	          'padding:16px',
+	          'border:1px solid #dbeafe',
+	          'border-radius:12px',
+	          'background:linear-gradient(135deg,#ffffff,#eff6ff)',
+	          'box-shadow:0 10px 24px rgba(37,99,235,.08)',
+	          'color:#111827'
+	        ].join(';');
+	        panel.innerHTML = [
+	          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px">',
+	          '  <div>',
+	          '    <div style="font-weight:800;font-size:15px;line-height:1.35">公告背景图片</div>',
+	          '    <div style="margin-top:4px;color:#64748b;font-size:12px;line-height:1.5">建议放在正文下方配置。上传或粘贴图片地址后，首页公告卡片和弹窗会使用这张图。</div>',
+	          '  </div>',
+	          '</div>',
+	          '<div data-xboard-notice-background-row="1" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">',
+	          '  <input data-xboard-notice-background-input="1" type="text" placeholder="上传后自动填入图片地址，也可以直接粘贴 URL" style="flex:1 1 280px;min-width:180px;height:38px;border:1px solid #bfdbfe;border-radius:8px;padding:0 12px;background:#fff;color:#111827;outline:none">',
+	          '</div>',
+	          '<img data-xboard-notice-background-preview style="display:none;margin-top:12px;width:280px;max-width:100%;height:118px;border-radius:10px;border:1px solid #bfdbfe;background:#f8fafc;object-fit:cover">'
+	        ].join('');
 
         var panelInput = panel.querySelector('[data-xboard-notice-background-input="1"]');
-        if (mirrorInput && mirrorInput.value) {
-          panelInput.value = mirrorInput.value;
-        }
+	        var initialImageUrl = mirrorInput && mirrorInput.value ? mirrorInput.value : inferNoticeImageUrl(dialog);
+	        if (initialImageUrl) panelInput.value = initialImageUrl;
         var uploadButton = createUrlUploadButton(panelInput, mirrorInput);
         var clearButton = document.createElement('button');
         clearButton.type = 'button';
@@ -631,17 +760,23 @@
           updateNoticeBackgroundPreview(panel, '');
         });
 
-        var target = dialog.querySelector('form') || dialog.querySelector('.ant-modal-body,.arco-modal-content,.n-modal,.el-dialog__body') || dialog;
-        target.insertBefore(panel, target.firstChild);
-        updateNoticeBackgroundPreview(panel, panelInput.value);
-        return panelInput;
-      }
+	        var target = dialog.querySelector('form') || dialog.querySelector('.ant-modal-body,.arco-modal-content,.n-card__content,.el-dialog__body') || dialog;
+	        var anchor = findNoticeContentAnchor(dialog);
+	        if (anchor && anchor.parentElement && target.contains(anchor)) {
+	          anchor.insertAdjacentElement('afterend', panel);
+	        } else {
+	          target.appendChild(panel);
+	        }
+	        updateNoticeBackgroundPreview(panel, panelInput.value);
+	        return panelInput;
+	      }
 
-      function mountNoticeImageUrlUploads(dialog) {
-        if (dialogUploadType(dialog) !== 'notice') return;
-        var mirrorInput = findNoticeImageUrlInput(dialog);
-        var panelInput = ensureNoticeBackgroundPanel(dialog, mirrorInput);
-        if (panelInput) return;
+	      function mountNoticeImageUrlUploads(dialog) {
+	        if (dialogUploadType(dialog) !== 'notice') return;
+	        var mirrorInput = findNoticeImageUrlInput(dialog);
+	        var panelInput = ensureNoticeBackgroundPanel(dialog, mirrorInput);
+	        ensureNoticePublishActions(dialog);
+	        if (panelInput) return;
 
         Array.prototype.forEach.call(dialog.querySelectorAll('input'), function (input) {
           if (input.closest && input.closest('[data-xboard-notice-background-panel="1"]')) return;
