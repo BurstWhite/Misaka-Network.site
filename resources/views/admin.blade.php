@@ -528,7 +528,8 @@
         var clear = panel && panel.querySelector('[data-xboard-notice-background-clear]');
         if (!preview || !clear) return;
         value = String(value || '').trim();
-        clear.style.display = value ? '' : 'none';
+        clear.disabled = !value;
+        clear.style.opacity = value ? '1' : '.48';
         if (!value) {
           preview.style.display = 'none';
           preview.removeAttribute('src');
@@ -544,14 +545,14 @@
         button.textContent = '上传图片';
         button.setAttribute('data-xboard-notice-image-url-upload', '1');
         button.style.cssText = [
-          'margin-left:8px',
-          'height:32px',
-          'padding:0 10px',
-          'border:1px solid #cbd5e1',
-          'border-radius:4px',
-          'background:#fff',
-          'color:#2563eb',
-          'font-size:13px',
+          'height:34px',
+          'padding:0 14px',
+          'border:1px solid #2563eb',
+          'border-radius:6px',
+          'background:#2563eb',
+          'color:#fff',
+          'font-size:14px',
+          'font-weight:600',
           'cursor:pointer',
           'white-space:nowrap'
         ].join(';');
@@ -574,20 +575,25 @@
         var panel = document.createElement('div');
         panel.setAttribute('data-xboard-notice-background-panel', '1');
         panel.style.cssText = [
-          'margin:12px 0 16px',
-          'padding:12px',
-          'border:1px solid #bfdbfe',
-          'border-radius:6px',
-          'background:#eff6ff',
-          'color:#0f172a'
+          'margin:0 0 18px',
+          'padding:16px',
+          'border:1px solid #e5e7eb',
+          'border-radius:8px',
+          'background:#fff',
+          'box-shadow:0 8px 22px rgba(15,23,42,.06)',
+          'color:#111827'
         ].join(';');
         panel.innerHTML = [
-          '<div style="font-weight:700;margin-bottom:8px">公告背景图片</div>',
-          '<div data-xboard-notice-background-row="1" style="display:flex;align-items:center;gap:8px">',
-          '  <input data-xboard-notice-background-input="1" type="text" placeholder="上传后自动填入图片地址" style="min-width:0;flex:1;height:34px;border:1px solid #93c5fd;border-radius:4px;padding:0 10px;background:#fff;color:#0f172a">',
+          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px">',
+          '  <div>',
+          '    <div style="font-weight:700;font-size:15px;line-height:1.35">公告背景图片</div>',
+          '    <div style="margin-top:3px;color:#64748b;font-size:12px;line-height:1.5">用于公告卡片/弹窗展示，上传后会自动保存图片地址。</div>',
+          '  </div>',
           '</div>',
-          '<div style="margin-top:8px;color:#475569;font-size:12px">用于公告卡片/弹窗展示的背景图。点击上传图片从本地选择文件。</div>',
-          '<img data-xboard-notice-background-preview style="display:none;margin-top:10px;max-width:100%;max-height:140px;border-radius:4px;border:1px solid #dbeafe;background:#fff;object-fit:cover">'
+          '<div data-xboard-notice-background-row="1" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px">',
+          '  <input data-xboard-notice-background-input="1" type="text" placeholder="上传后自动填入图片地址" style="min-width:0;width:100%;height:36px;border:1px solid #d1d5db;border-radius:6px;padding:0 11px;background:#fff;color:#111827;outline:none">',
+          '</div>',
+          '<img data-xboard-notice-background-preview style="display:none;margin-top:12px;width:220px;max-width:100%;height:96px;border-radius:6px;border:1px solid #e5e7eb;background:#f8fafc;object-fit:cover">'
         ].join('');
 
         var panelInput = panel.querySelector('[data-xboard-notice-background-input="1"]');
@@ -600,13 +606,14 @@
         clearButton.textContent = '清除';
         clearButton.setAttribute('data-xboard-notice-background-clear', '1');
         clearButton.style.cssText = [
-          'height:32px',
-          'padding:0 10px',
-          'border:1px solid #cbd5e1',
-          'border-radius:4px',
-          'background:#fff',
-          'color:#475569',
+          'height:34px',
+          'padding:0 12px',
+          'border:1px solid #d1d5db',
+          'border-radius:6px',
+          'background:#f9fafb',
+          'color:#4b5563',
           'font-size:13px',
+          'font-weight:600',
           'cursor:pointer',
           'white-space:nowrap'
         ].join(';');
@@ -633,9 +640,11 @@
       function mountNoticeImageUrlUploads(dialog) {
         if (dialogUploadType(dialog) !== 'notice') return;
         var mirrorInput = findNoticeImageUrlInput(dialog);
-        ensureNoticeBackgroundPanel(dialog, mirrorInput);
+        var panelInput = ensureNoticeBackgroundPanel(dialog, mirrorInput);
+        if (panelInput) return;
 
         Array.prototype.forEach.call(dialog.querySelectorAll('input'), function (input) {
+          if (input.closest && input.closest('[data-xboard-notice-background-panel="1"]')) return;
           if (!visible(input) || !isNoticeImageUrlInput(input)) return;
           if (input.getAttribute('data-xboard-notice-image-url-bound') === '1') return;
           input.setAttribute('data-xboard-notice-image-url-bound', '1');

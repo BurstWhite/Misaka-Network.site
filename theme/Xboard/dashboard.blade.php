@@ -235,6 +235,105 @@
       });
     })();
   </script>
+  <style>
+    body.xboard-auth-page {
+      margin: 0;
+      background: #f7fafc;
+      color: #0f172a;
+    }
+
+    body.xboard-auth-page .xboard-auth-shell {
+      position: relative;
+      min-height: 100vh;
+      padding: 28px;
+      overflow: hidden;
+      background-color: #f7fafc;
+    }
+
+    body.xboard-auth-page .xboard-auth-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(248, 250, 252, .96), rgba(239, 246, 255, .9) 54%, rgba(236, 253, 245, .88));
+      backdrop-filter: blur(1px);
+    }
+
+    body.xboard-auth-page .xboard-auth-shell > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    body.xboard-auth-page .xboard-auth-card {
+      width: min(440px, calc(100vw - 32px)) !important;
+      border: 1px solid rgba(148, 163, 184, .26) !important;
+      border-radius: 18px !important;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, .14) !important;
+      background: rgba(255, 255, 255, .94) !important;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+
+    body.xboard-auth-page .xboard-auth-card .n-card__content {
+      padding: 34px 34px 24px !important;
+    }
+
+    body.xboard-auth-page .xboard-auth-brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px !important;
+      text-align: center;
+    }
+
+    body.xboard-auth-page .xboard-auth-logo {
+      width: auto !important;
+      max-width: min(180px, 58vw) !important;
+      max-height: 64px !important;
+      margin: 0 !important;
+      object-fit: contain;
+    }
+
+    body.xboard-auth-page .xboard-auth-title {
+      margin: 0;
+      color: #0f172a;
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.18;
+    }
+
+    body.xboard-auth-page .xboard-auth-description {
+      margin-top: 2px !important;
+      color: #64748b !important;
+      font-size: 14px !important;
+      line-height: 1.55 !important;
+    }
+
+    body.xboard-auth-page .xboard-auth-card input {
+      min-height: 42px;
+    }
+
+    body.xboard-auth-page .xboard-auth-card button {
+      border-radius: 8px;
+    }
+
+    @media (max-width: 640px) {
+      body.xboard-auth-page .xboard-auth-shell {
+        padding: 18px;
+        align-items: flex-start !important;
+        padding-top: 42px;
+      }
+
+      body.xboard-auth-page .xboard-auth-card .n-card__content {
+        padding: 28px 22px 20px !important;
+      }
+
+      body.xboard-auth-page .xboard-auth-title {
+        font-size: 24px;
+      }
+    }
+  </style>
   <script type="module" crossorigin src="/theme/{{$theme}}/assets/umi.js"></script>
 </head>
 
@@ -264,6 +363,86 @@
     }
   </script>
   <div id="app"></div>
+  <script>
+    (function () {
+      function isAuthRoute() {
+        return /^#\/(?:login|register|forgetpassword)(?:[/?#]|$)/.test(window.location.hash || '');
+      }
+
+      function closestCard(element) {
+        var node = element;
+        while (node && node !== document.body) {
+          if (node.classList && (node.classList.contains('n-card') || /(?:^|\s)n-card(?:\s|$)/.test(node.className || ''))) {
+            return node;
+          }
+          node = node.parentElement;
+        }
+        return null;
+      }
+
+      function findAuthCard() {
+        var inputs = Array.prototype.slice.call(document.querySelectorAll('input[type="email"],input[type="password"]'));
+        for (var i = 0; i < inputs.length; i++) {
+          var card = closestCard(inputs[i]);
+          if (card) return card;
+        }
+        return null;
+      }
+
+      function ensureBrand(card) {
+        var settings = window.settings || {};
+        var title = settings.title || document.title || 'XBoard';
+        var logo = card.querySelector('img');
+        var heading = card.querySelector('h1');
+        var brand = logo ? logo.parentElement : (heading ? heading.parentElement : card.firstElementChild);
+        if (!brand) return;
+
+        brand.classList.add('xboard-auth-brand');
+        if (logo) {
+          logo.classList.add('xboard-auth-logo');
+          if (!brand.querySelector('[data-xboard-auth-title="1"]')) {
+            var titleNode = document.createElement('div');
+            titleNode.setAttribute('data-xboard-auth-title', '1');
+            titleNode.className = 'xboard-auth-title';
+            titleNode.textContent = title;
+            logo.insertAdjacentElement('afterend', titleNode);
+          }
+        } else if (heading) {
+          heading.classList.add('xboard-auth-title');
+          heading.textContent = title;
+        }
+
+        var description = brand.parentElement && brand.parentElement.querySelector('h5');
+        if (description) description.classList.add('xboard-auth-description');
+      }
+
+      function enhanceAuthPage() {
+        var auth = isAuthRoute();
+        document.body.classList.toggle('xboard-auth-page', auth);
+        if (!auth) {
+          Array.prototype.forEach.call(document.querySelectorAll('.xboard-auth-shell'), function (shell) {
+            shell.classList.remove('xboard-auth-shell');
+          });
+          return;
+        }
+
+        var card = findAuthCard();
+        if (!card) return;
+        card.classList.add('xboard-auth-card');
+        var shell = card.closest('.wh-full') || card.parentElement;
+        if (shell) shell.classList.add('xboard-auth-shell');
+        ensureBrand(card);
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        enhanceAuthPage();
+        new MutationObserver(enhanceAuthPage).observe(document.body, { childList: true, subtree: true });
+        window.addEventListener('hashchange', function () {
+          setTimeout(enhanceAuthPage, 120);
+        });
+      });
+    })();
+  </script>
   {!! $theme_config['custom_html'] !!}
 </body>
 
