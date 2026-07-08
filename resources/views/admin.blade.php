@@ -330,12 +330,11 @@
 	        var style = document.createElement('style');
 	        style.id = 'xboard-admin-polish-style';
 	        style.textContent = [
-	          '[data-xboard-notice-editor-layout="1"] > *{min-width:0}',
 	          '[data-xboard-theme-actions="1"]{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;flex-wrap:wrap!important;width:100%!important}',
 	          '[data-xboard-theme-actions-left="1"],[data-xboard-theme-actions-right="1"]{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
 	          '[data-xboard-theme-actions-left="1"]{margin-right:auto}',
 	          '[data-xboard-theme-actions-right="1"]{margin-left:auto}',
-	          '@media (max-width:820px){[data-xboard-notice-editor-layout="1"]{grid-template-columns:1fr!important}[data-xboard-notice-background-row="1"]{flex-wrap:wrap!important}[data-xboard-notice-background-row="1"] input{flex-basis:100%!important}}'
+	          '@media (max-width:820px){[data-xboard-notice-background-row="1"]{flex-wrap:wrap!important}[data-xboard-notice-background-row="1"] input{flex-basis:100%!important}}'
 	        ].join('\n');
 	        document.head.appendChild(style);
 	      }
@@ -783,28 +782,24 @@
 	        var panel = document.createElement('div');
 	        panel.setAttribute('data-xboard-notice-background-panel', '1');
 	        panel.style.cssText = [
-	          'margin:0 0 12px',
-	          'padding:14px',
-	          'border:1px solid #dbeafe',
-	          'border-radius:12px',
-	          'background:linear-gradient(135deg,#ffffff,#eff6ff)',
-	          'box-shadow:0 10px 24px rgba(37,99,235,.08)',
+	          'margin:16px 0 0',
+	          'padding:0',
 	          'color:#111827',
 	          'box-sizing:border-box',
-	          'min-width:240px'
+	          'width:100%'
 	        ].join(';');
 	        panel.innerHTML = [
-	          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px">',
-	          '  <div>',
-	          '    <div style="font-weight:800;font-size:15px;line-height:1.35">公告背景图片</div>',
-	          '    <div style="margin-top:4px;color:#64748b;font-size:12px;line-height:1.5">上传或粘贴图片 URL 后，用户端公告卡片将显示这张背景图。</div>',
+	          '<div style="margin-bottom:8px;color:#64748b;font-size:14px;font-weight:700;line-height:1.4">公告背景图片</div>',
+	          '<div style="margin-bottom:8px;color:#94a3b8;font-size:12px;line-height:1.5">上传或粘贴图片 URL 后，用户端公告卡片将显示这张背景图。</div>',
+	          '<div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">',
+	          '  <div style="flex:1 1 520px;min-width:0;max-width:620px">',
+	          '    <div data-xboard-notice-background-row="1" style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">',
+	          '      <input data-xboard-notice-background-input="1" type="text" placeholder="图片 URL" style="flex:1 1 auto;min-width:0;height:38px;border:1px solid #dbe3ef;border-radius:8px;padding:0 12px;background:#fff;color:#111827;outline:none;box-shadow:0 1px 2px rgba(15,23,42,.04)">',
+	          '    </div>',
+	          '    <div data-xboard-notice-background-empty style="margin-top:10px;height:92px;border:1px dashed #cbd5e1;border-radius:8px;background:#f8fafc;display:flex;align-items:center;justify-content:center;padding:12px;text-align:center;color:#94a3b8;font-size:12px;line-height:1.5">暂无背景图，可上传或粘贴图片 URL。</div>',
+	          '    <img data-xboard-notice-background-preview style="display:none;margin-top:10px;width:100%;height:120px;border-radius:8px;border:1px solid #dbe3ef;background:#f8fafc;object-fit:cover">',
 	          '  </div>',
 	          '</div>',
-	          '<div data-xboard-notice-background-row="1" style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">',
-	          '  <input data-xboard-notice-background-input="1" type="text" placeholder="图片 URL" style="flex:1 1 auto;min-width:0;height:38px;border:1px solid #bfdbfe;border-radius:8px;padding:0 12px;background:#fff;color:#111827;outline:none">',
-	          '</div>',
-	          '<div data-xboard-notice-background-empty style="margin-top:12px;min-height:104px;border:1px dashed #bfdbfe;border-radius:10px;background:rgba(239,246,255,.62);display:flex;align-items:center;justify-content:center;padding:14px;text-align:center;color:#64748b;font-size:12px;line-height:1.5">暂无背景图，可上传或粘贴图片 URL。</div>',
-	          '<img data-xboard-notice-background-preview style="display:none;margin-top:12px;width:100%;max-height:148px;min-height:104px;border-radius:10px;border:1px solid #bfdbfe;background:#f8fafc;object-fit:cover">'
 	        ].join('');
 
         var panelInput = panel.querySelector('[data-xboard-notice-background-input="1"]');
@@ -841,25 +836,11 @@
           updateNoticeBackgroundPreview(panel, '');
         });
 
-	        var target = dialog.querySelector('form') || dialog.querySelector('.ant-modal-body,.arco-modal-content,.n-card__content,.el-dialog__body') || dialog;
 	        var anchor = findNoticeContentAnchor(dialog);
-	        if (anchor && anchor.parentElement && target.contains(anchor)) {
-	          var layout = dialog.querySelector('[data-xboard-notice-editor-layout="1"]');
-	          if (!layout) {
-	            layout = document.createElement('div');
-	            layout.setAttribute('data-xboard-notice-editor-layout', '1');
-	            layout.style.cssText = [
-	              'display:grid',
-	              'grid-template-columns:minmax(0,1fr) minmax(240px,320px)',
-	              'gap:16px',
-	              'align-items:start',
-	              'margin:8px 0 10px'
-	            ].join(';');
-	            anchor.insertAdjacentElement('beforebegin', layout);
-	            layout.appendChild(anchor);
-	          }
-	          layout.appendChild(panel);
+	        if (anchor && anchor.parentElement) {
+	          anchor.insertAdjacentElement('afterend', panel);
 	        } else {
+	          var target = dialog.querySelector('form') || dialog.querySelector('.ant-modal-body,.arco-modal-content,.n-card__content,.el-dialog__body') || dialog;
 	          target.appendChild(panel);
 	        }
 	        updateNoticeBackgroundPreview(panel, panelInput.value);
