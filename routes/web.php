@@ -19,7 +19,7 @@ function inject_auth_layout_patch(string $html, array $settings): string
         'logo' => $settings['logo'] ?? '',
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
-    $patch = <<<HTML
+    $style = <<<HTML
 <style data-xboard-auth-layout-patch="1">
   body.xboard-auth-page{--login-bg:#f7fafc;--login-bg-overlay:linear-gradient(135deg,rgba(248,250,252,.96),rgba(239,246,255,.9) 54%,rgba(236,253,245,.88));--login-card-bg:rgba(255,255,255,.94);--login-text:#0f172a;--login-muted:#64748b;--login-border:rgba(148,163,184,.26);--login-input-bg:rgba(255,255,255,.96);--login-input-border:rgba(148,163,184,.48);--login-input-focus:#2563eb;--login-placeholder:#94a3b8;--login-primary:#0f6fdc;--login-link-bg:rgba(248,250,252,.82);margin:0;background:var(--login-bg)!important;color:var(--login-text)!important}
   html.dark body.xboard-auth-page{--login-bg:#0f172a;--login-bg-overlay:linear-gradient(135deg,rgba(15,23,42,.92),rgba(30,41,59,.84) 52%,rgba(6,78,59,.58));--login-card-bg:rgba(15,23,42,.9);--login-text:#f8fafc;--login-muted:#cbd5e1;--login-border:rgba(148,163,184,.22);--login-input-bg:rgba(15,23,42,.78);--login-input-border:rgba(148,163,184,.38);--login-input-focus:#60a5fa;--login-placeholder:#94a3b8;--login-primary:#3b82f6;--login-link-bg:rgba(30,41,59,.62)}
@@ -40,6 +40,9 @@ function inject_auth_layout_patch(string $html, array $settings): string
   body.xboard-auth-page .xboard-auth-links{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;margin:24px -34px -24px!important;padding:16px 34px!important;background:var(--login-link-bg)!important;color:var(--login-muted)!important}
   @media (max-width:640px){body.xboard-auth-page .xboard-auth-shell{align-items:flex-start!important;padding:42px 18px 18px!important}body.xboard-auth-page .xboard-auth-card{padding:28px 22px 20px!important}body.xboard-auth-page .xboard-auth-title{font-size:24px!important}body.xboard-auth-page .xboard-auth-links{margin:24px -22px -20px!important;padding:16px 22px!important}}
 </style>
+HTML;
+
+    $script = <<<HTML
 <script data-xboard-auth-layout-patch="1">
 (function(){
   var settings = {$payload};
@@ -59,11 +62,17 @@ function inject_auth_layout_patch(string $html, array $settings): string
 </script>
 HTML;
 
-    if (str_contains($html, '</body>')) {
-        return str_replace('</body>', $patch . "\n</body>", $html);
+    if (str_contains($html, '</head>')) {
+        $html = str_replace('</head>', $style . "\n</head>", $html);
+    } else {
+        $html = $style . $html;
     }
 
-    return $html . $patch;
+    if (str_contains($html, '</body>')) {
+        return str_replace('</body>', $script . "\n</body>", $html);
+    }
+
+    return $html . $script;
 }
 
 /*
