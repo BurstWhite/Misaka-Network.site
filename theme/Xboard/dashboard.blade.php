@@ -258,17 +258,32 @@
   </script>
   <style>
     body.xboard-auth-page {
+      --login-bg: #f7fafc;
+      --login-bg-overlay: linear-gradient(135deg, rgba(248, 250, 252, .96), rgba(239, 246, 255, .9) 54%, rgba(236, 253, 245, .88));
+      --login-card-bg: rgba(255, 255, 255, .94);
+      --login-text: #0f172a;
+      --login-muted: #64748b;
+      --login-border: rgba(148, 163, 184, .26);
+      --login-input-bg: rgba(255, 255, 255, .96);
+      --login-input-border: rgba(148, 163, 184, .48);
+      --login-input-focus: #2563eb;
+      --login-placeholder: #94a3b8;
+      --login-primary: #0f6fdc;
+      --login-link-bg: rgba(248, 250, 252, .82);
       margin: 0;
-      background: #f7fafc;
-      color: #0f172a;
+      background: var(--login-bg);
+      color: var(--login-text);
     }
 
     body.xboard-auth-page .xboard-auth-shell {
       position: relative;
       min-height: 100vh;
       padding: 28px;
-      overflow: hidden;
-      background-color: #f7fafc;
+      overflow: auto;
+      background-color: var(--login-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
 	    body.xboard-auth-page .xboard-auth-shell::before {
@@ -276,7 +291,7 @@
 	      position: absolute;
 	      inset: 0;
 	      background:
-	        linear-gradient(135deg, rgba(248, 250, 252, .96), rgba(239, 246, 255, .9) 54%, rgba(236, 253, 245, .88)),
+	        var(--login-bg-overlay),
 	        var(--xboard-client-bg-image, none);
 	      background-position: center;
 	      background-size: cover;
@@ -290,10 +305,10 @@
 
     body.xboard-auth-page .xboard-auth-card {
       width: min(440px, calc(100vw - 32px)) !important;
-      border: 1px solid rgba(148, 163, 184, .26) !important;
+      border: 1px solid var(--login-border) !important;
       border-radius: 18px !important;
       box-shadow: 0 24px 70px rgba(15, 23, 42, .14) !important;
-      background: rgba(255, 255, 255, .94) !important;
+      background: var(--login-card-bg) !important;
       overflow: hidden;
       backdrop-filter: blur(12px);
     }
@@ -317,11 +332,12 @@
       max-height: 64px !important;
       margin: 0 !important;
       object-fit: contain;
+      border-radius: 4px;
     }
 
     body.xboard-auth-page .xboard-auth-title {
       margin: 0;
-      color: #0f172a;
+      color: var(--login-text);
       font-size: 28px;
       font-weight: 800;
       line-height: 1.18;
@@ -329,7 +345,7 @@
 
     body.xboard-auth-page .xboard-auth-description {
       margin-top: 2px !important;
-      color: #64748b !important;
+      color: var(--login-muted) !important;
       font-size: 14px !important;
       line-height: 1.55 !important;
     }
@@ -339,76 +355,108 @@
 	    }
 
 	    body.xboard-auth-page .xboard-auth-card .n-input {
-	      --n-color: rgba(255, 255, 255, .96) !important;
-	      --n-color-focus: #ffffff !important;
+	      --n-color: var(--login-input-bg) !important;
+	      --n-color-focus: var(--login-input-bg) !important;
 	      --n-color-disabled: rgba(241, 245, 249, .9) !important;
-	      --n-text-color: #0f172a !important;
-	      --n-placeholder-color: #94a3b8 !important;
-	      --n-border: 1px solid rgba(148, 163, 184, .48) !important;
+	      --n-text-color: var(--login-text) !important;
+	      --n-placeholder-color: var(--login-placeholder) !important;
+	      --n-border: 1px solid var(--login-input-border) !important;
 	      --n-border-hover: 1px solid rgba(59, 130, 246, .72) !important;
-	      --n-border-focus: 1px solid #2563eb !important;
+	      --n-border-focus: 1px solid var(--login-input-focus) !important;
 	      --n-box-shadow-focus: 0 0 0 2px rgba(37, 99, 235, .16) !important;
-	      background: rgba(255, 255, 255, .96) !important;
+	      background: var(--login-input-bg) !important;
 	    }
 
 	    body.xboard-auth-page .xboard-auth-card .n-input__input-el,
 	    body.xboard-auth-page .xboard-auth-card .n-input__textarea-el {
-	      color: #0f172a !important;
-	      -webkit-text-fill-color: #0f172a !important;
+	      color: var(--login-text) !important;
+	      -webkit-text-fill-color: var(--login-text) !important;
 	    }
 
 	    html.dark body.xboard-auth-page {
-	      background: #0f172a;
-	      color: #e5e7eb;
+	      --login-bg: #0f172a;
+	      --login-bg-overlay: linear-gradient(135deg, rgba(15, 23, 42, .92), rgba(30, 41, 59, .84) 52%, rgba(6, 78, 59, .58));
+	      --login-card-bg: rgba(15, 23, 42, .9);
+	      --login-text: #f8fafc;
+	      --login-muted: #cbd5e1;
+	      --login-border: rgba(148, 163, 184, .22);
+	      --login-input-bg: rgba(15, 23, 42, .78);
+	      --login-input-border: rgba(148, 163, 184, .38);
+	      --login-input-focus: #60a5fa;
+	      --login-placeholder: #94a3b8;
+	      --login-primary: #3b82f6;
+	      --login-link-bg: rgba(30, 41, 59, .62);
+	      background: var(--login-bg);
+	      color: var(--login-text);
 	    }
 
 	    html.dark body.xboard-auth-page .xboard-auth-shell {
-	      background-color: #0f172a;
+	      background-color: var(--login-bg);
 	    }
 
 	    html.dark body.xboard-auth-page .xboard-auth-shell::before {
 	      background:
-	        linear-gradient(135deg, rgba(15, 23, 42, .9), rgba(30, 41, 59, .82) 52%, rgba(20, 83, 45, .58)),
+	        var(--login-bg-overlay),
 	        var(--xboard-client-bg-image, none);
 	      background-position: center;
 	      background-size: cover;
 	    }
 
 	    html.dark body.xboard-auth-page .xboard-auth-card {
-	      border-color: rgba(148, 163, 184, .22) !important;
-	      background: rgba(15, 23, 42, .9) !important;
+	      border-color: var(--login-border) !important;
+	      background: var(--login-card-bg) !important;
 	      box-shadow: 0 28px 80px rgba(0, 0, 0, .38) !important;
 	    }
 
 	    html.dark body.xboard-auth-page .xboard-auth-title {
-	      color: #f8fafc;
+	      color: var(--login-text);
 	    }
 
 	    html.dark body.xboard-auth-page .xboard-auth-description {
-	      color: #cbd5e1 !important;
+	      color: var(--login-muted) !important;
 	    }
 
 	    html.dark body.xboard-auth-page .xboard-auth-card .n-input {
-	      --n-color: rgba(15, 23, 42, .78) !important;
+	      --n-color: var(--login-input-bg) !important;
 	      --n-color-focus: rgba(15, 23, 42, .96) !important;
 	      --n-color-disabled: rgba(30, 41, 59, .72) !important;
-	      --n-text-color: #f8fafc !important;
-	      --n-placeholder-color: #94a3b8 !important;
-	      --n-border: 1px solid rgba(148, 163, 184, .38) !important;
+	      --n-text-color: var(--login-text) !important;
+	      --n-placeholder-color: var(--login-placeholder) !important;
+	      --n-border: 1px solid var(--login-input-border) !important;
 	      --n-border-hover: 1px solid rgba(96, 165, 250, .72) !important;
-	      --n-border-focus: 1px solid #60a5fa !important;
+	      --n-border-focus: 1px solid var(--login-input-focus) !important;
 	      --n-box-shadow-focus: 0 0 0 2px rgba(96, 165, 250, .18) !important;
-	      background: rgba(15, 23, 42, .78) !important;
+	      background: var(--login-input-bg) !important;
 	    }
 
 	    html.dark body.xboard-auth-page .xboard-auth-card .n-input__input-el,
 	    html.dark body.xboard-auth-page .xboard-auth-card .n-input__textarea-el {
-	      color: #f8fafc !important;
-	      -webkit-text-fill-color: #f8fafc !important;
+	      color: var(--login-text) !important;
+	      -webkit-text-fill-color: var(--login-text) !important;
 	    }
 
 	    body.xboard-auth-page .xboard-auth-card button {
 	      border-radius: 8px;
+	    }
+
+	    body.xboard-auth-page .xboard-auth-card .n-button--primary-type,
+	    body.xboard-auth-page .xboard-auth-card button[type="submit"] {
+	      --n-color: var(--login-primary) !important;
+	      --n-color-hover: var(--login-primary) !important;
+	      --n-color-pressed: var(--login-primary) !important;
+	      --n-color-focus: var(--login-primary) !important;
+	      --n-border: 1px solid var(--login-primary) !important;
+	      --n-border-hover: 1px solid var(--login-primary) !important;
+	      --n-border-pressed: 1px solid var(--login-primary) !important;
+	      --n-border-focus: 1px solid var(--login-primary) !important;
+	      --n-text-color: #ffffff !important;
+	      background: var(--login-primary) !important;
+	      color: #ffffff !important;
+	    }
+
+	    body.xboard-auth-page .xboard-auth-card a,
+	    body.xboard-auth-page .xboard-auth-card .n-button:not(.n-button--primary-type) {
+	      color: var(--login-muted) !important;
 	    }
 
 	    body.xboard-client-page {

@@ -337,11 +337,19 @@
 	        var style = document.createElement('style');
 	        style.id = 'xboard-admin-polish-style';
 	        style.textContent = [
+	          '[data-xboard-notice-editor-layout="1"]{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(260px,340px)!important;gap:18px!important;align-items:start!important;margin:8px 0 12px!important;width:100%!important;box-sizing:border-box!important}',
+	          '[data-xboard-notice-editor-layout="1"] > *{min-width:0!important}',
+	          '[data-xboard-notice-editor-main="1"]{min-width:0!important}',
+	          '[data-xboard-notice-editor-main="1"] .rc-md-editor{width:100%!important;min-width:0!important}',
+	          '[data-xboard-notice-background-panel="1"]{align-self:start!important;border:1px solid #dbe3ef!important;border-radius:10px!important;background:#fff!important;box-shadow:0 8px 22px rgba(15,23,42,.06)!important;padding:14px!important;color:#111827!important;box-sizing:border-box!important;min-width:0!important;width:100%!important}',
+	          '[data-xboard-notice-background-row="1"]{display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:nowrap!important}',
+	          '[data-xboard-notice-background-row="1"] input{flex:1 1 auto!important;min-width:0!important}',
+	          '[data-xboard-notice-background-preview]{max-height:150px!important}',
 	          '[data-xboard-theme-actions="1"]{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;flex-wrap:wrap!important;width:100%!important}',
 	          '[data-xboard-theme-actions-left="1"],[data-xboard-theme-actions-right="1"]{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
 	          '[data-xboard-theme-actions-left="1"]{margin-right:auto}',
 	          '[data-xboard-theme-actions-right="1"]{margin-left:auto}',
-	          '@media (max-width:820px){[data-xboard-notice-background-row="1"]{flex-wrap:wrap!important}[data-xboard-notice-background-row="1"] input{flex-basis:100%!important}}'
+	          '@media (max-width:920px){[data-xboard-notice-editor-layout="1"]{grid-template-columns:1fr!important}[data-xboard-notice-background-row="1"]{flex-wrap:wrap!important}[data-xboard-notice-background-row="1"] input{flex-basis:100%!important}}'
 	        ].join('\n');
 	        document.head.appendChild(style);
 	      }
@@ -692,17 +700,63 @@
 
 	      function closestFormItem(element) {
 	        if (!element || !element.closest) return null;
-	        return element.closest('.ant-form-item,.arco-form-item,.n-form-item,.el-form-item,.form-item,.form-group,label') || element.parentElement;
+	        return element.closest('.ant-form-item,.arco-form-item,.n-form-item,.el-form-item,.form-item,.form-group,label,[class*="form-item"],[class*="FormItem"]');
 	      }
 
 	      function findNoticeContentAnchor(dialog) {
-	        var fields = Array.prototype.slice.call(dialog.querySelectorAll('textarea,.monaco-editor,.CodeMirror,[contenteditable="true"],.cm-editor'));
+	        var fields = Array.prototype.slice.call(dialog.querySelectorAll('.rc-md-editor,textarea,.monaco-editor,.CodeMirror,[contenteditable="true"],.cm-editor'));
 	        for (var i = 0; i < fields.length; i++) {
 	          if (!visible(fields[i])) continue;
-	          var item = closestFormItem(fields[i]);
-	          return item || fields[i];
+	          var editor = fields[i].closest && fields[i].closest('.rc-md-editor,.monaco-editor,.CodeMirror,.cm-editor,[contenteditable="true"]');
+	          var anchor = editor || fields[i];
+	          if (editor && editor.classList && editor.classList.contains('rc-md-editor') && editor.parentElement) {
+	            anchor = editor.parentElement;
+	          }
+	          if (anchor.closest && anchor.closest('[data-xboard-notice-background-panel="1"]')) continue;
+	          if (anchor.closest && anchor.closest('[data-xboard-notice-editor-layout="1"]')) {
+	            return anchor.getAttribute('data-xboard-notice-editor-main') === '1'
+	              ? anchor
+	              : anchor.closest('[data-xboard-notice-editor-main="1"]') || anchor;
+	          }
+	          var formItem = closestFormItem(anchor);
+	          if (formItem && !formItem.querySelector('[data-xboard-notice-background-panel="1"]')) {
+	            var editorRoot = formItem.querySelector('.rc-md-editor,.monaco-editor,.CodeMirror,.cm-editor,textarea,[contenteditable="true"]');
+	            if (editorRoot && editorRoot.parentElement && !editorRoot.parentElement.closest('[data-xboard-notice-background-panel="1"]')) {
+	              return editorRoot.classList && editorRoot.classList.contains('rc-md-editor') ? editorRoot.parentElement : formItem;
+	            }
+	          }
+	          return anchor;
 	        }
 	        return null;
+	      }
+
+	      function placeNoticeBackgroundPanel(dialog, panel) {
+	        var anchor = findNoticeContentAnchor(dialog);
+	        if (anchor && anchor.parentElement) {
+	          var layout = dialog.querySelector('[data-xboard-notice-editor-layout="1"]');
+	          var main = dialog.querySelector('[data-xboard-notice-editor-main="1"]');
+	          if (!layout) {
+	            layout = document.createElement('div');
+	            layout.setAttribute('data-xboard-notice-editor-layout', '1');
+	            anchor.insertAdjacentElement('beforebegin', layout);
+	          }
+	          if (!main) {
+	            main = document.createElement('div');
+	            main.setAttribute('data-xboard-notice-editor-main', '1');
+	          }
+	          if (anchor !== main && !main.contains(anchor)) {
+	            layout.appendChild(main);
+	            main.appendChild(anchor);
+	          } else if (anchor === main && anchor.parentElement !== layout) {
+	            layout.appendChild(anchor);
+	          }
+	          if (panel.parentElement !== layout) {
+	            layout.appendChild(panel);
+	          }
+	          return;
+	        }
+	        var target = dialog.querySelector('form') || dialog.querySelector('.ant-modal-body,.arco-modal-content,.n-card__content,.el-dialog__body') || dialog;
+	        target.appendChild(panel);
 	      }
 
 	      function findNoticeSubmitButton(dialog) {
@@ -783,29 +837,27 @@
             setInputValue(existingInput, mirrorInput.value);
           }
           updateNoticeBackgroundPreview(existing, existingInput ? existingInput.value : '');
+          placeNoticeBackgroundPanel(dialog, existing);
           return existingInput;
         }
 
 	        var panel = document.createElement('div');
 	        panel.setAttribute('data-xboard-notice-background-panel', '1');
 	        panel.style.cssText = [
-	          'margin:16px 0 0',
-	          'padding:0',
+	          'margin:0',
 	          'color:#111827',
 	          'box-sizing:border-box',
 	          'width:100%'
 	        ].join(';');
 	        panel.innerHTML = [
-	          '<div style="margin-bottom:8px;color:#64748b;font-size:14px;font-weight:700;line-height:1.4">公告背景图片</div>',
-	          '<div style="margin-bottom:8px;color:#94a3b8;font-size:12px;line-height:1.5">上传或粘贴图片 URL 后，用户端公告卡片将显示这张背景图。</div>',
-	          '<div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">',
-	          '  <div style="flex:1 1 520px;min-width:0;max-width:620px">',
+	          '<div style="margin-bottom:6px;color:#111827;font-size:14px;font-weight:800;line-height:1.4">公告背景图片</div>',
+	          '<div style="margin-bottom:12px;color:#64748b;font-size:12px;line-height:1.55">上传或粘贴图片 URL 后，用户端公告卡片将显示这张背景图。</div>',
+	          '<div style="display:block;min-width:0">',
 	          '    <div data-xboard-notice-background-row="1" style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">',
 	          '      <input data-xboard-notice-background-input="1" type="text" placeholder="图片 URL" style="flex:1 1 auto;min-width:0;height:38px;border:1px solid #dbe3ef;border-radius:8px;padding:0 12px;background:#fff;color:#111827;outline:none;box-shadow:0 1px 2px rgba(15,23,42,.04)">',
 	          '    </div>',
-	          '    <div data-xboard-notice-background-empty style="margin-top:10px;height:92px;border:1px dashed #cbd5e1;border-radius:8px;background:#f8fafc;display:flex;align-items:center;justify-content:center;padding:12px;text-align:center;color:#94a3b8;font-size:12px;line-height:1.5">暂无背景图，可上传或粘贴图片 URL。</div>',
-	          '    <img data-xboard-notice-background-preview style="display:none;margin-top:10px;width:100%;height:120px;border-radius:8px;border:1px solid #dbe3ef;background:#f8fafc;object-fit:cover">',
-	          '  </div>',
+	          '    <div data-xboard-notice-background-empty style="margin-top:12px;min-height:116px;border:1px dashed #cbd5e1;border-radius:8px;background:#f8fafc;display:flex;align-items:center;justify-content:center;padding:12px;text-align:center;color:#94a3b8;font-size:12px;line-height:1.5">暂无背景图，可上传或粘贴图片 URL。</div>',
+	          '    <img data-xboard-notice-background-preview style="display:none;margin-top:12px;width:100%;height:140px;border-radius:8px;border:1px solid #dbe3ef;background:#f8fafc;object-fit:cover">',
 	          '</div>',
 	        ].join('');
 
@@ -843,13 +895,7 @@
           updateNoticeBackgroundPreview(panel, '');
         });
 
-	        var anchor = findNoticeContentAnchor(dialog);
-	        if (anchor && anchor.parentElement) {
-	          anchor.insertAdjacentElement('afterend', panel);
-	        } else {
-	          var target = dialog.querySelector('form') || dialog.querySelector('.ant-modal-body,.arco-modal-content,.n-card__content,.el-dialog__body') || dialog;
-	          target.appendChild(panel);
-	        }
+	        placeNoticeBackgroundPanel(dialog, panel);
 	        updateNoticeBackgroundPreview(panel, panelInput.value);
 	        return panelInput;
 	      }
