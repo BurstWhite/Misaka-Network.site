@@ -63,14 +63,23 @@ HTML;
   function schedule(){setTimeout(apply,80);setTimeout(apply,350);setTimeout(apply,1000)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule);else schedule();
   addEventListener('hashchange',schedule);new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+HTML;
+
+    $noticeScript = <<<'HTML'
+<script data-xboard-notice-cover-patch="1">
+(function(){
   window.__xboardNoticeImages=window.__xboardNoticeImages||[];
   function noticeUrl(value){if(!value)return '';value=String(value);return value.indexOf('http')===0?value:value.charAt(0)==='/'?value:'/'+value}
   function rememberNotices(payload){var list=[];try{if(payload&&payload.data&&Array.isArray(payload.data))list=payload.data;else if(payload&&payload.data&&Array.isArray(payload.data.data))list=payload.data.data;else if(Array.isArray(payload))list=payload}catch(e){}if(!list.length)return;window.__xboardNoticeImages=list.filter(function(item){return item&&item.title&&item.img_url}).map(function(item){return{title:String(item.title),url:noticeUrl(item.img_url)}});scheduleNoticeCovers()}
   function noticeContainer(node){var n=node;while(n&&n!==document.body){if(n.classList&&(n.classList.contains('n-card')||n.classList.contains('n-modal')||n.classList.contains('n-drawer')||/card|dialog|notice|modal/i.test(n.className||''))){var r=n.getBoundingClientRect();if(r.width>220&&r.height>120)return n}n=n.parentElement}return null}
-  function mountNoticeCover(item){var nodes=[].slice.call(document.querySelectorAll('h1,h2,h3,h4,h5,h6,p,span,div')).filter(function(n){return String(n.textContent||'').trim()===item.title});for(var i=0;i<nodes.length;i++){var box=noticeContainer(nodes[i]);if(!box||box.querySelector('img[data-xboard-notice-cover="'+item.title.replace(/"/g,'&quot;')+'"]'))continue;var img=document.createElement('img');img.className='xboard-notice-cover';img.dataset.xboardNoticeCover=item.title;img.src=item.url;img.alt=item.title;img.loading='lazy';img.decoding='async';img.onerror=function(){this.style.display='none'};box.classList.add('xboard-notice-cover-wrap');box.insertBefore(img,box.firstElementChild||null);break}}
+  function hasCover(box,item){return [].slice.call(box.querySelectorAll('img.xboard-notice-cover')).some(function(img){return img.dataset.xboardNoticeCover===item.title})}
+  function mountNoticeCover(item){var nodes=[].slice.call(document.querySelectorAll('h1,h2,h3,h4,h5,h6,p,span,div')).filter(function(n){return String(n.textContent||'').trim()===item.title});for(var i=0;i<nodes.length;i++){var box=noticeContainer(nodes[i]);if(!box||hasCover(box,item))continue;var img=document.createElement('img');img.className='xboard-notice-cover';img.dataset.xboardNoticeCover=item.title;img.src=item.url;img.alt=item.title;img.loading='lazy';img.decoding='async';img.onerror=function(){this.style.display='none'};box.classList.add('xboard-notice-cover-wrap');box.insertBefore(img,box.firstElementChild||null);break}}
   function scheduleNoticeCovers(){setTimeout(function(){(window.__xboardNoticeImages||[]).forEach(mountNoticeCover)},120);setTimeout(function(){(window.__xboardNoticeImages||[]).forEach(mountNoticeCover)},800)}
-  if(window.fetch){var originalFetch=window.fetch;window.fetch=function(){return originalFetch.apply(this,arguments).then(function(response){try{var url=String(arguments.length?'':'')}catch(e){}try{var requestUrl=String(response.url||'');if(requestUrl.indexOf('/notice/fetch')!==-1){response.clone().json().then(rememberNotices).catch(function(){})}}catch(e){}return response})}}
-  var OriginalXHR=window.XMLHttpRequest;if(OriginalXHR){window.XMLHttpRequest=function(){var xhr=new OriginalXHR(),url='';var open=xhr.open;xhr.open=function(method,requestUrl){url=String(requestUrl||'');return open.apply(xhr,arguments)};xhr.addEventListener('load',function(){if(url.indexOf('/notice/fetch')===-1)return;try{rememberNotices(JSON.parse(xhr.responseText))}catch(e){}});return xhr};window.XMLHttpRequest.prototype=OriginalXHR.prototype}
+  if(window.fetch&&!window.__xboardNoticeFetchPatched){window.__xboardNoticeFetchPatched=true;var originalFetch=window.fetch;window.fetch=function(){return originalFetch.apply(this,arguments).then(function(response){try{var requestUrl=String(response.url||'');if(requestUrl.indexOf('/notice/fetch')!==-1){response.clone().json().then(rememberNotices).catch(function(){})}}catch(e){}return response})}}
+  if(window.XMLHttpRequest&&!window.__xboardNoticeXhrPatched){window.__xboardNoticeXhrPatched=true;var OriginalXHR=window.XMLHttpRequest;window.XMLHttpRequest=function(){var xhr=new OriginalXHR(),url='';var open=xhr.open;xhr.open=function(method,requestUrl){url=String(requestUrl||'');return open.apply(xhr,arguments)};xhr.addEventListener('load',function(){if(url.indexOf('/notice/fetch')===-1)return;try{rememberNotices(JSON.parse(xhr.responseText))}catch(e){}});return xhr};window.XMLHttpRequest.prototype=OriginalXHR.prototype}
+  new MutationObserver(scheduleNoticeCovers).observe(document.documentElement,{childList:true,subtree:true});
 })();
 </script>
 HTML;
@@ -82,10 +91,10 @@ HTML;
     }
 
     if (str_contains($html, '</body>')) {
-        return str_replace('</body>', $script . "\n</body>", $html);
+        return str_replace('</body>', $script . "\n" . $noticeScript . "\n</body>", $html);
     }
 
-    return $html . $script;
+    return $html . $script . $noticeScript;
 }
 
 /*
