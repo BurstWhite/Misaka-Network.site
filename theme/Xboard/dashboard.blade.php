@@ -487,6 +487,30 @@
 	      --n-th-text-color: #0f172a !important;
 	    }
 
+	    html:not(.dark) body.xboard-client-page .n-card .n-data-table-wrapper,
+	    html:not(.dark) body.xboard-client-page .n-card .n-data-table-base-table,
+	    html:not(.dark) body.xboard-client-page .n-card .n-data-table-base-table-body,
+	    html:not(.dark) body.xboard-client-page .n-card .n-data-table-base-table-header {
+	      background: transparent !important;
+	      border-radius: 0 !important;
+	      box-shadow: none !important;
+	    }
+
+	    html:not(.dark) body.xboard-client-page .n-card .n-data-table-wrapper {
+	      border: 0 !important;
+	      overflow-x: auto !important;
+	      overflow-y: visible !important;
+	    }
+
+	    html:not(.dark) body.xboard-client-page .n-card .n-data-table {
+	      background: transparent !important;
+	      box-shadow: none !important;
+	    }
+
+	    html:not(.dark) body.xboard-client-page .n-card .n-data-table .n-data-table-empty {
+	      background: transparent !important;
+	    }
+
 	    html:not(.dark) body.xboard-client-page .bg-gray-800 {
 	      background: rgba(255, 255, 255, .86) !important;
 	      border: 1px solid rgba(148, 163, 184, .22) !important;
@@ -526,13 +550,30 @@
 	    }
 
 	    body.xboard-client-page .xboard-notice-background-dialog {
-	      background-position: center !important;
-	      background-size: cover !important;
 	      overflow: hidden;
 	    }
 
 	    body.xboard-client-page .xboard-notice-background-dialog .markdown-body {
 	      background: transparent !important;
+	    }
+
+	    body.xboard-client-page .xboard-notice-cover {
+	      display: block;
+	      width: 100%;
+	      height: 190px;
+	      object-fit: cover;
+	      background: rgba(241, 245, 249, .84);
+	      border-bottom: 1px solid rgba(148, 163, 184, .18);
+	    }
+
+	    html:not(.dark) body.xboard-client-page .xboard-notice-cover {
+	      border-color: rgba(148, 163, 184, .2);
+	    }
+
+	    @media (max-width: 640px) {
+	      body.xboard-client-page .xboard-notice-cover {
+	        height: 150px;
+	      }
 	    }
 
     @media (max-width: 640px) {
@@ -682,7 +723,7 @@
 	        if (data && data.data) data = data.data;
 	        if (!Array.isArray(data)) return;
 	        noticeItems = data.filter(function (item) {
-	          return item && item.img_url;
+	          return item && noticeImageUrl(item);
 	        });
 	        setTimeout(applyNoticeBackgrounds, 60);
 	      }
@@ -728,23 +769,48 @@
 	        return String((element && (element.innerText || element.textContent)) || '').replace(/\s+/g, ' ');
 	      }
 
+	      function noticeImageUrl(notice) {
+	        return String((notice && (notice.img_url || notice.background_url || notice.cover_url || notice.image || notice.banner_url)) || '').trim();
+	      }
+
+	      function ensureNoticeCover(card, notice) {
+	        var url = noticeImageUrl(notice);
+	        if (!card || !url || card.getAttribute('data-xboard-notice-cover-url') === url) return;
+	        var oldCover = null;
+	        for (var i = 0; i < card.children.length; i++) {
+	          if (card.children[i].classList && card.children[i].classList.contains('xboard-notice-cover')) {
+	            oldCover = card.children[i];
+	            break;
+	          }
+	        }
+	        if (oldCover) oldCover.remove();
+	        var image = document.createElement('img');
+	        image.className = 'xboard-notice-cover';
+	        image.alt = notice.title || '公告背景图片';
+	        image.loading = 'lazy';
+	        image.decoding = 'async';
+	        image.src = url;
+	        image.onerror = function () {
+	          image.remove();
+	          card.removeAttribute('data-xboard-notice-cover-url');
+	        };
+	        card.insertBefore(image, card.firstElementChild || null);
+	        card.setAttribute('data-xboard-notice-cover-url', url);
+	      }
+
 	      function applyNoticeBackgrounds() {
 	        if (!noticeItems.length) return;
 	        var dialogs = Array.prototype.slice.call(document.querySelectorAll('.n-modal, .n-card, [role="dialog"]'));
 	        dialogs.forEach(function (dialog) {
-	          if (!dialog || dialog.getAttribute('data-xboard-notice-background-applied') === '1') return;
+	          if (!dialog) return;
 	          var text = textOf(dialog);
 	          var notice = noticeItems.find(function (item) {
 	            return item.title && text.indexOf(item.title) !== -1;
 	          });
-	          if (!notice || !notice.img_url) return;
+	          if (!notice || !noticeImageUrl(notice)) return;
 	          var card = dialog.classList && dialog.classList.contains('n-card') ? dialog : dialog.querySelector('.n-card') || dialog;
 	          card.classList.add('xboard-notice-background-dialog');
-	          card.setAttribute('data-xboard-notice-background-applied', '1');
-	          card.style.backgroundImage = [
-	            'linear-gradient(135deg, rgba(255,255,255,.92), rgba(255,247,237,.86))',
-	            cssUrl(notice.img_url)
-	          ].join(',');
+	          ensureNoticeCover(card, notice);
 	        });
 	      }
 

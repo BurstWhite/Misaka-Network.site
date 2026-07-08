@@ -325,6 +325,21 @@
         return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
       }
 
+	      function ensureAdminUiStyles() {
+	        if (document.getElementById('xboard-admin-polish-style')) return;
+	        var style = document.createElement('style');
+	        style.id = 'xboard-admin-polish-style';
+	        style.textContent = [
+	          '[data-xboard-notice-editor-layout="1"] > *{min-width:0}',
+	          '[data-xboard-theme-actions="1"]{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;flex-wrap:wrap!important;width:100%!important}',
+	          '[data-xboard-theme-actions-left="1"],[data-xboard-theme-actions-right="1"]{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
+	          '[data-xboard-theme-actions-left="1"]{margin-right:auto}',
+	          '[data-xboard-theme-actions-right="1"]{margin-left:auto}',
+	          '@media (max-width:820px){[data-xboard-notice-editor-layout="1"]{grid-template-columns:1fr!important}[data-xboard-notice-background-row="1"]{flex-wrap:wrap!important}[data-xboard-notice-background-row="1"] input{flex-basis:100%!important}}'
+	        ].join('\n');
+	        document.head.appendChild(style);
+	      }
+
       function normalizedText(element) {
         return String((element && (element.textContent || '')) || '').replace(/\s+/g, ' ');
       }
@@ -622,20 +637,32 @@
       function updateNoticeBackgroundPreview(panel, value) {
         var preview = panel && panel.querySelector('[data-xboard-notice-background-preview]');
         var clear = panel && panel.querySelector('[data-xboard-notice-background-clear]');
-        if (!preview || !clear) return;
+        var empty = panel && panel.querySelector('[data-xboard-notice-background-empty]');
+        if (!preview || !clear || !empty) return;
         value = String(value || '').trim();
         clear.disabled = !value;
         clear.style.opacity = value ? '1' : '.48';
         if (!value) {
           preview.style.display = 'none';
           preview.removeAttribute('src');
+          empty.style.display = 'flex';
           return;
         }
         preview.src = value;
         preview.style.display = '';
+        empty.style.display = 'none';
       }
 
-	      function createUrlUploadButton(input, mirrorInput) {
+	      function hideNoticeBackgroundMirrorInput(input) {
+	        if (!input || !input.closest || input.closest('[data-xboard-notice-background-panel="1"]')) return;
+	        var formItem = closestFormItem(input);
+	        var target = formItem && formItem !== document.body ? formItem : input.parentElement;
+	        if (!target || target.getAttribute('data-xboard-notice-background-hidden') === '1') return;
+	        target.setAttribute('data-xboard-notice-background-hidden', '1');
+	        target.style.display = 'none';
+	      }
+
+      function createUrlUploadButton(input, mirrorInput) {
 	        var button = document.createElement('button');
         button.type = 'button';
         button.textContent = '上传图片';
@@ -692,6 +719,10 @@
 	        if (!dialog || dialogUploadType(dialog) !== 'notice') return;
 	        var existing = dialog.querySelector('[data-xboard-notice-actions="1"]');
 	        var originalButton = findNoticeSubmitButton(dialog);
+	        if (originalButton) {
+	          if (existing) existing.remove();
+	          return;
+	        }
 	        if (existing) {
 	          var existingButton = existing.querySelector('[data-xboard-notice-publish-button="1"]');
 	          if (existingButton) existingButton.textContent = /编辑公告/.test(normalizedText(dialog)) ? '保存公告' : '发布公告';
@@ -737,9 +768,11 @@
 	      }
 
 	      function ensureNoticeBackgroundPanel(dialog, mirrorInput) {
+	        hideNoticeBackgroundMirrorInput(mirrorInput);
 	        var existing = dialog.querySelector('[data-xboard-notice-background-panel="1"]');
 	        if (existing) {
           var existingInput = existing.querySelector('[data-xboard-notice-background-input="1"]');
+          hideNoticeBackgroundMirrorInput(mirrorInput);
           if (existingInput && mirrorInput && !existingInput.value && mirrorInput.value) {
             setInputValue(existingInput, mirrorInput.value);
           }
@@ -750,25 +783,28 @@
 	        var panel = document.createElement('div');
 	        panel.setAttribute('data-xboard-notice-background-panel', '1');
 	        panel.style.cssText = [
-	          'margin:14px 0 12px',
-	          'padding:16px',
+	          'margin:0 0 12px',
+	          'padding:14px',
 	          'border:1px solid #dbeafe',
 	          'border-radius:12px',
 	          'background:linear-gradient(135deg,#ffffff,#eff6ff)',
 	          'box-shadow:0 10px 24px rgba(37,99,235,.08)',
-	          'color:#111827'
+	          'color:#111827',
+	          'box-sizing:border-box',
+	          'min-width:240px'
 	        ].join(';');
 	        panel.innerHTML = [
 	          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px">',
 	          '  <div>',
 	          '    <div style="font-weight:800;font-size:15px;line-height:1.35">公告背景图片</div>',
-	          '    <div style="margin-top:4px;color:#64748b;font-size:12px;line-height:1.5">建议放在正文下方配置。上传或粘贴图片地址后，首页公告卡片和弹窗会使用这张图。</div>',
+	          '    <div style="margin-top:4px;color:#64748b;font-size:12px;line-height:1.5">上传或粘贴图片 URL 后，用户端公告卡片将显示这张背景图。</div>',
 	          '  </div>',
 	          '</div>',
-	          '<div data-xboard-notice-background-row="1" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">',
-	          '  <input data-xboard-notice-background-input="1" type="text" placeholder="上传后自动填入图片地址，也可以直接粘贴 URL" style="flex:1 1 280px;min-width:180px;height:38px;border:1px solid #bfdbfe;border-radius:8px;padding:0 12px;background:#fff;color:#111827;outline:none">',
+	          '<div data-xboard-notice-background-row="1" style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">',
+	          '  <input data-xboard-notice-background-input="1" type="text" placeholder="图片 URL" style="flex:1 1 auto;min-width:0;height:38px;border:1px solid #bfdbfe;border-radius:8px;padding:0 12px;background:#fff;color:#111827;outline:none">',
 	          '</div>',
-	          '<img data-xboard-notice-background-preview style="display:none;margin-top:12px;width:280px;max-width:100%;height:118px;border-radius:10px;border:1px solid #bfdbfe;background:#f8fafc;object-fit:cover">'
+	          '<div data-xboard-notice-background-empty style="margin-top:12px;min-height:104px;border:1px dashed #bfdbfe;border-radius:10px;background:rgba(239,246,255,.62);display:flex;align-items:center;justify-content:center;padding:14px;text-align:center;color:#64748b;font-size:12px;line-height:1.5">暂无背景图，可上传或粘贴图片 URL。</div>',
+	          '<img data-xboard-notice-background-preview style="display:none;margin-top:12px;width:100%;max-height:148px;min-height:104px;border-radius:10px;border:1px solid #bfdbfe;background:#f8fafc;object-fit:cover">'
 	        ].join('');
 
         var panelInput = panel.querySelector('[data-xboard-notice-background-input="1"]');
@@ -808,7 +844,21 @@
 	        var target = dialog.querySelector('form') || dialog.querySelector('.ant-modal-body,.arco-modal-content,.n-card__content,.el-dialog__body') || dialog;
 	        var anchor = findNoticeContentAnchor(dialog);
 	        if (anchor && anchor.parentElement && target.contains(anchor)) {
-	          anchor.insertAdjacentElement('afterend', panel);
+	          var layout = dialog.querySelector('[data-xboard-notice-editor-layout="1"]');
+	          if (!layout) {
+	            layout = document.createElement('div');
+	            layout.setAttribute('data-xboard-notice-editor-layout', '1');
+	            layout.style.cssText = [
+	              'display:grid',
+	              'grid-template-columns:minmax(0,1fr) minmax(240px,320px)',
+	              'gap:16px',
+	              'align-items:start',
+	              'margin:8px 0 10px'
+	            ].join(';');
+	            anchor.insertAdjacentElement('beforebegin', layout);
+	            layout.appendChild(anchor);
+	          }
+	          layout.appendChild(panel);
 	        } else {
 	          target.appendChild(panel);
 	        }
@@ -1368,9 +1418,12 @@
         if (!container) return;
         var existingButtons = container.querySelectorAll('[data-xboard-theme-delete-button="1"]');
         for (var i = 0; i < existingButtons.length; i++) {
-          if (existingButtons[i].getAttribute('data-theme-name') === themeName) return;
+          if (existingButtons[i].getAttribute('data-theme-name') === themeName) {
+            existingButtons[i].remove();
+          }
         }
         var button = createThemeDeleteButton(themeName);
+        button.style.marginRight = 'auto';
         var tag = String(container.tagName || '').toLowerCase();
         if (tag === 'tr') {
           var cells = container.querySelectorAll('td,th');
@@ -1394,16 +1447,31 @@
             .pop();
         }
         actionTarget = actionTarget || container;
-        if (actionTarget.style) {
-          var display = window.getComputedStyle(actionTarget).display;
-          if (display !== 'flex' && display !== 'inline-flex') {
-            actionTarget.style.display = 'flex';
-            actionTarget.style.alignItems = 'center';
-            actionTarget.style.gap = actionTarget.style.gap || '8px';
-            actionTarget.style.flexWrap = actionTarget.style.flexWrap || 'wrap';
-          }
+        var rightButtons = Array.prototype.slice.call(actionTarget.children || [])
+          .filter(function (item) {
+            var tagName = String(item.tagName || '').toLowerCase();
+            var role = item.getAttribute && item.getAttribute('role');
+            return item !== button
+              && ['button', 'a', 'span', 'div'].indexOf(tagName) !== -1
+              && role !== 'presentation'
+              && visible(item)
+              && item.getAttribute('data-xboard-theme-actions-left') !== '1';
+          });
+        var leftGroup = actionTarget.querySelector('[data-xboard-theme-actions-left="1"]');
+        var rightGroup = actionTarget.querySelector('[data-xboard-theme-actions-right="1"]');
+        if (!leftGroup || !rightGroup) {
+          leftGroup = document.createElement('div');
+          rightGroup = document.createElement('div');
+          leftGroup.setAttribute('data-xboard-theme-actions-left', '1');
+          rightGroup.setAttribute('data-xboard-theme-actions-right', '1');
+          rightButtons.forEach(function (item) {
+            rightGroup.appendChild(item);
+          });
+          actionTarget.appendChild(leftGroup);
+          actionTarget.appendChild(rightGroup);
         }
-        actionTarget.appendChild(button);
+        actionTarget.setAttribute('data-xboard-theme-actions', '1');
+        leftGroup.appendChild(button);
       }
 
       function mountThemeDeleteButtons() {
@@ -1453,6 +1521,7 @@
       }
 
       function mountKnowledgeTools() {
+        ensureAdminUiStyles();
         mountThemeDeleteButtons();
         if (!isKnowledgePage() && !isNoticePage()) {
           var existingAppleButton = document.getElementById('xboard-apple-id-manage-button');
