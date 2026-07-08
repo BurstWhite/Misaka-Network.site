@@ -5,6 +5,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{{ $title }}</title>
+  @php
+    $faviconUrl = trim((string) $logo);
+  @endphp
+  @if($faviconUrl !== '')
+    <link rel="icon" href="{{ $faviconUrl }}" />
+    <link rel="apple-touch-icon" href="{{ $faviconUrl }}" />
+  @endif
   <script>
     window.settings = {
       base_url: "/",
@@ -1356,6 +1363,8 @@
         ].join(',');
         var best = null;
         var bestArea = Infinity;
+        var bestAction = null;
+        var bestActionArea = Infinity;
         var nodes = Array.prototype.slice.call(document.querySelectorAll(selectors));
         for (var i = 0; i < nodes.length; i++) {
           var node = nodes[i];
@@ -1366,12 +1375,19 @@
           var rect = node.getBoundingClientRect();
           if (rect.height < 28 || rect.width < 120 || rect.height > 520) continue;
           var area = rect.width * rect.height;
+          if (text.indexOf('主题设置') !== -1 || /theme settings?/i.test(text)) {
+            if (area < bestActionArea) {
+              bestAction = node;
+              bestActionArea = area;
+            }
+            continue;
+          }
           if (area < bestArea) {
             best = node;
             bestArea = area;
           }
         }
-        return best;
+        return bestAction || best;
       }
 
       function createThemeDeleteButton(themeName) {
@@ -1404,7 +1420,7 @@
           }
         }
         var button = createThemeDeleteButton(themeName);
-        button.style.marginRight = 'auto';
+        button.style.marginRight = '8px';
         var tag = String(container.tagName || '').toLowerCase();
         if (tag === 'tr') {
           var cells = container.querySelectorAll('td,th');
@@ -1414,6 +1430,24 @@
             container.appendChild(targetCell);
           }
           targetCell.appendChild(button);
+          return;
+        }
+
+        var settingButton = Array.prototype.slice.call(container.querySelectorAll('button,[role="button"],a'))
+          .filter(visible)
+          .find(function (item) {
+            var text = normalizedText(item);
+            return text.indexOf('主题设置') !== -1 || /theme settings?/i.test(text);
+          });
+        if (settingButton && settingButton.parentElement) {
+          var buttonRow = settingButton.parentElement;
+          if (buttonRow.style) {
+            buttonRow.style.display = 'flex';
+            buttonRow.style.alignItems = 'center';
+            buttonRow.style.gap = buttonRow.style.gap || '8px';
+            buttonRow.style.flexWrap = buttonRow.style.flexWrap || 'wrap';
+          }
+          buttonRow.insertBefore(button, settingButton);
           return;
         }
 

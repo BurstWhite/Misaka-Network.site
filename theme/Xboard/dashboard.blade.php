@@ -22,6 +22,8 @@
     <link rel="dns-prefetch" href="{{ $origin }}" />
   @endforeach
   @if($logoUrl !== '')
+    <link rel="icon" href="{{ $logoUrl }}" />
+    <link rel="apple-touch-icon" href="{{ $logoUrl }}" />
     <link rel="preload" as="image" href="{{ $logoUrl }}" fetchpriority="high" />
   @endif
   <script>
