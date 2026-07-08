@@ -317,6 +317,11 @@
       padding: 34px 34px 24px !important;
     }
 
+    body.xboard-auth-page .xboard-auth-card:not(.n-card) {
+      box-sizing: border-box;
+      padding: 34px 34px 24px !important;
+    }
+
     body.xboard-auth-page .xboard-auth-brand {
       display: flex;
       flex-direction: column;
@@ -333,6 +338,12 @@
       margin: 0 !important;
       object-fit: contain;
       border-radius: 4px;
+    }
+
+    body.xboard-auth-page .xboard-auth-card img:not(.xboard-auth-logo) {
+      max-width: 100% !important;
+      max-height: 64px !important;
+      object-fit: contain !important;
     }
 
     body.xboard-auth-page .xboard-auth-title {
@@ -457,6 +468,22 @@
 	    body.xboard-auth-page .xboard-auth-card a,
 	    body.xboard-auth-page .xboard-auth-card .n-button:not(.n-button--primary-type) {
 	      color: var(--login-muted) !important;
+	    }
+
+	    body.xboard-auth-page .xboard-auth-card .xboard-auth-links {
+	      display: flex !important;
+	      align-items: center !important;
+	      justify-content: space-between !important;
+	      gap: 12px !important;
+	      margin: 24px -1px 0 !important;
+	      padding: 16px 22px !important;
+	      border-radius: 0 !important;
+	      background: var(--login-link-bg) !important;
+	      color: var(--login-muted) !important;
+	    }
+
+	    body.xboard-auth-page .xboard-auth-card .xboard-auth-links > * {
+	      min-width: 0;
 	    }
 
 	    body.xboard-client-page {
@@ -637,6 +664,10 @@
         padding: 28px 22px 20px !important;
       }
 
+      body.xboard-auth-page .xboard-auth-card:not(.n-card) {
+        padding: 28px 22px 20px !important;
+      }
+
       body.xboard-auth-page .xboard-auth-title {
         font-size: 24px;
       }
@@ -710,42 +741,125 @@
       }
 
       function findAuthCard() {
-        var inputs = Array.prototype.slice.call(document.querySelectorAll('input[type="email"],input[type="password"]'));
+        var inputs = Array.prototype.slice.call(document.querySelectorAll('input[type="email"],input[type="password"],input[autocomplete*="email"],input[autocomplete*="password"]'));
         for (var i = 0; i < inputs.length; i++) {
           var card = closestCard(inputs[i]);
           if (card) return card;
         }
-        return null;
+        var password = inputs.find(function (input) {
+          return String(input.type || '').toLowerCase() === 'password' || /password|密码/i.test(input.autocomplete || input.placeholder || '');
+        });
+        var email = inputs.find(function (input) {
+          return input !== password && (String(input.type || '').toLowerCase() === 'email' || /mail|邮箱|email/i.test(input.autocomplete || input.placeholder || ''));
+        }) || inputs.find(function (input) { return input !== password; });
+        if (!password || !email) return null;
+        var controls = [email, password];
+        var best = null;
+        var bestArea = Infinity;
+        var bestComplete = null;
+        var bestCompleteArea = Infinity;
+        var node = email.parentElement;
+        while (node && node !== document.body) {
+          if (node.id === 'app') break;
+          var containsControls = controls.every(function (input) { return node.contains(input); });
+          var hasAction = node.querySelector('button,[role="button"],input[type="submit"]');
+          if (containsControls && hasAction) {
+            var rect = node.getBoundingClientRect();
+            var area = Math.max(rect.width, 1) * Math.max(rect.height, 1);
+            var text = String(node.textContent || '').replace(/\s+/g, ' ');
+            var hasFullAuthSurface = node.querySelector('img,h1,h5') || /注册|忘记密码|简体中文|English|语言|language|南海|凤凰|让于/i.test(text);
+            if (hasFullAuthSurface && area < bestCompleteArea) {
+              bestComplete = node;
+              bestCompleteArea = area;
+            }
+            if (area < bestArea) {
+              best = node;
+              bestArea = area;
+            }
+          }
+          node = node.parentElement;
+        }
+        return bestComplete || best;
+      }
+
+      function authLogoCandidate(card) {
+        var images = Array.prototype.slice.call(card.querySelectorAll('img'));
+        if (!images.length) return null;
+        images.sort(function (a, b) {
+          var ar = a.getBoundingClientRect();
+          var br = b.getBoundingClientRect();
+          return (br.width * br.height) - (ar.width * ar.height);
+        });
+        return images[0];
+      }
+
+      function ensureAuthLogo(brand, card) {
+        var settings = window.settings || {};
+        var logo = authLogoCandidate(card);
+        if (!logo && settings.logo) {
+          logo = document.createElement('img');
+          logo.src = settings.logo;
+          logo.alt = settings.title || 'XBoard';
+          brand.insertBefore(logo, brand.firstChild || null);
+        }
+        if (!logo) return null;
+        if (logo.parentElement !== brand) brand.insertBefore(logo, brand.firstChild || null);
+        logo.classList.add('xboard-auth-logo');
+        logo.loading = 'eager';
+        logo.decoding = 'async';
+        if ('fetchPriority' in logo) logo.fetchPriority = 'high';
+        return logo;
+      }
+
+      function findAuthDescription(card) {
+        return Array.prototype.slice.call(card.querySelectorAll('h5,p,small,div,span')).find(function (node) {
+          if (node.closest && node.closest('.xboard-auth-brand')) return false;
+          var text = String(node.textContent || '').trim();
+          return text && text.length <= 40 && /南海|凤凰|让于/i.test(text);
+        }) || null;
+      }
+
+      function markAuthLinks(card) {
+        var candidates = Array.prototype.slice.call(card.querySelectorAll('div,section,footer')).filter(function (node) {
+          if (node.classList.contains('xboard-auth-brand')) return false;
+          var text = String(node.textContent || '').replace(/\s+/g, ' ');
+          return /注册|忘记密码|简体中文|English|语言|language/i.test(text)
+            && node.querySelectorAll('a,button,[role="button"]').length >= 1;
+        });
+        if (!candidates.length) return;
+        candidates.sort(function (a, b) {
+          return b.getBoundingClientRect().top - a.getBoundingClientRect().top;
+        });
+        candidates[0].classList.add('xboard-auth-links');
       }
 
 	      function ensureBrand(card) {
         var settings = window.settings || {};
-        var title = settings.title || document.title || 'XBoard';
-        var logo = card.querySelector('img');
+        var title = (settings.title || document.title || 'XBoard').replace(/^登录页\s*\|\s*/i, '');
         var heading = card.querySelector('h1');
-        var brand = logo ? logo.parentElement : (heading ? heading.parentElement : card.firstElementChild);
-        if (!brand) return;
-
-        brand.classList.add('xboard-auth-brand');
-	        if (logo) {
-	          logo.classList.add('xboard-auth-logo');
-	          logo.loading = 'eager';
-	          logo.decoding = 'async';
-	          if ('fetchPriority' in logo) logo.fetchPriority = 'high';
-	          if (!brand.querySelector('[data-xboard-auth-title="1"]')) {
-            var titleNode = document.createElement('div');
-            titleNode.setAttribute('data-xboard-auth-title', '1');
-            titleNode.className = 'xboard-auth-title';
-            titleNode.textContent = title;
-            logo.insertAdjacentElement('afterend', titleNode);
-          }
-        } else if (heading) {
-          heading.classList.add('xboard-auth-title');
-          heading.textContent = title;
+        var brand = card.querySelector('.xboard-auth-brand');
+        if (!brand) {
+          brand = document.createElement('div');
+          brand.className = 'xboard-auth-brand';
+          card.insertBefore(brand, card.firstElementChild || null);
         }
 
-        var description = brand.parentElement && brand.parentElement.querySelector('h5');
-        if (description) description.classList.add('xboard-auth-description');
+        ensureAuthLogo(brand, card);
+        if (!brand.querySelector('[data-xboard-auth-title="1"]')) {
+          var titleNode = document.createElement('div');
+          titleNode.setAttribute('data-xboard-auth-title', '1');
+          titleNode.className = 'xboard-auth-title';
+          titleNode.textContent = title;
+          brand.appendChild(titleNode);
+        }
+        if (heading && heading.parentElement !== brand) heading.style.display = 'none';
+
+        var description = findAuthDescription(card);
+        if (description) {
+          description.classList.add('xboard-auth-description');
+          if (description.parentElement !== brand) brand.appendChild(description);
+        }
+        markAuthLinks(card);
       }
 
 	      function enhanceAuthPage() {
