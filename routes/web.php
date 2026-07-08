@@ -85,16 +85,16 @@ HTML;
 HTML;
 
     if (str_contains($html, '</head>')) {
-        $html = str_replace('</head>', $style . "\n</head>", $html);
+        $html = str_replace('</head>', $style . "\n" . $noticeScript . "\n</head>", $html);
     } else {
-        $html = $style . $html;
+        $html = $style . $noticeScript . $html;
     }
 
     if (str_contains($html, '</body>')) {
-        return str_replace('</body>', $script . "\n" . $noticeScript . "\n</body>", $html);
+        return str_replace('</body>', $script . "\n</body>", $html);
     }
 
-    return $html . $script . $noticeScript;
+    return $html . $script;
 }
 
 /*
