@@ -98,6 +98,8 @@
 	        activeUrlInput: null,
 	        activeMirrorUrlInput: null,
 	        noticeItems: [],
+	        themeItems: {},
+	        activeTheme: '',
 	        toolsScheduled: false,
 	        lastToolsRunAt: 0
 	      };
@@ -154,6 +156,19 @@
 
 	      function isNoticeFetchUrl(url) {
 	        return /\/notice\/fetch(?:\?|$)/.test(String(url || ''));
+	      }
+
+	      function isThemeFetchUrl(url) {
+	        return /\/theme\/getThemes(?:\?|$)/.test(String(url || ''));
+	      }
+
+	      function rememberThemeItems(body) {
+	        var data = body && body.data;
+	        if (data && data.data) data = data.data;
+	        if (!data || !data.themes) return;
+	        state.themeItems = data.themes || {};
+	        state.activeTheme = data.active || '';
+	        scheduleKnowledgeTools(60);
 	      }
 
 	      function rememberNoticeItems(body) {
@@ -239,6 +254,13 @@
 	                } catch (e) {}
 	              });
 	            }
+	            if (isThemeFetchUrl(this.__xboardAdminUrl)) {
+	              this.addEventListener('loadend', function () {
+	                try {
+	                  rememberThemeItems(JSON.parse(this.responseText));
+	                } catch (e) {}
+	              });
+	            }
 	            return originalSend.call(this, body);
 	          };
           XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
@@ -260,6 +282,9 @@
 	            return originalFetch.apply(this, arguments).then(function (response) {
 	              if (isNoticeFetchUrl(url)) {
 	                response.clone().json().then(rememberNoticeItems).catch(function () {});
+	              }
+	              if (isThemeFetchUrl(url)) {
+	                response.clone().json().then(rememberThemeItems).catch(function () {});
 	              }
 	              return response;
 	            });
@@ -326,6 +351,12 @@
         var route = routeText();
         if (/notice/i.test(route)) return true;
         return document.body && visiblePageTextMatches(/公告管理|添加公告|编辑公告|Notice/i);
+      }
+
+      function isThemePage() {
+        var route = routeText();
+        if (/theme/i.test(route)) return true;
+        return document.body && visiblePageTextMatches(/主题配置|主题设置|主题管理|Theme/i);
       }
 
       function trackEditor(editor) {
@@ -1268,7 +1299,161 @@
           .replace(/'/g, '&#039;');
       }
 
+      function themeEntries() {
+        return Object.keys(state.themeItems || {}).map(function (name) {
+          var item = state.themeItems[name] || {};
+          item.__name = item.name || name;
+          return item;
+        });
+      }
+
+      function findThemeContainer(themeName) {
+        var selectors = [
+          'tr',
+          'li',
+          '.ant-card',
+          '.arco-card',
+          '.n-card',
+          '.el-card',
+          '[class*="card"]',
+          '[class*="Card"]',
+          '[class*="item"]',
+          '[class*="Item"]',
+          'section',
+          'article',
+          'div'
+        ].join(',');
+        var best = null;
+        var bestArea = Infinity;
+        var nodes = Array.prototype.slice.call(document.querySelectorAll(selectors));
+        for (var i = 0; i < nodes.length; i++) {
+          var node = nodes[i];
+          if (!visible(node)) continue;
+          if (node.closest && node.closest('[data-xboard-theme-delete-button="1"]')) continue;
+          var text = normalizedText(node);
+          if (!text || text.indexOf(themeName) === -1) continue;
+          var rect = node.getBoundingClientRect();
+          if (rect.height < 28 || rect.width < 120 || rect.height > 520) continue;
+          var area = rect.width * rect.height;
+          if (area < bestArea) {
+            best = node;
+            bestArea = area;
+          }
+        }
+        return best;
+      }
+
+      function createThemeDeleteButton(themeName) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = '删除主题';
+        button.setAttribute('data-xboard-theme-delete-button', '1');
+        button.setAttribute('data-theme-name', themeName);
+        button.style.cssText = [
+          'height:32px',
+          'padding:0 12px',
+          'border:1px solid #fecaca',
+          'border-radius:6px',
+          'background:#fff',
+          'color:#dc2626',
+          'font-size:13px',
+          'font-weight:700',
+          'cursor:pointer',
+          'white-space:nowrap'
+        ].join(';');
+        return button;
+      }
+
+      function appendThemeDeleteButton(container, themeName) {
+        if (!container) return;
+        var existingButtons = container.querySelectorAll('[data-xboard-theme-delete-button="1"]');
+        for (var i = 0; i < existingButtons.length; i++) {
+          if (existingButtons[i].getAttribute('data-theme-name') === themeName) return;
+        }
+        var button = createThemeDeleteButton(themeName);
+        var tag = String(container.tagName || '').toLowerCase();
+        if (tag === 'tr') {
+          var cells = container.querySelectorAll('td,th');
+          var targetCell = cells[cells.length - 1] || null;
+          if (!targetCell) {
+            targetCell = document.createElement('td');
+            container.appendChild(targetCell);
+          }
+          targetCell.appendChild(button);
+          return;
+        }
+
+        var actionTarget = Array.prototype.slice.call(container.querySelectorAll('[class*="action"],[class*="Action"],[class*="footer"],[class*="Footer"]'))
+          .filter(visible)
+          .pop();
+        if (!actionTarget) {
+          actionTarget = Array.prototype.slice.call(container.querySelectorAll('button,[role="button"]'))
+            .filter(visible)
+            .map(function (item) { return item.parentElement; })
+            .filter(Boolean)
+            .pop();
+        }
+        actionTarget = actionTarget || container;
+        if (actionTarget.style) {
+          var display = window.getComputedStyle(actionTarget).display;
+          if (display !== 'flex' && display !== 'inline-flex') {
+            actionTarget.style.display = 'flex';
+            actionTarget.style.alignItems = 'center';
+            actionTarget.style.gap = actionTarget.style.gap || '8px';
+            actionTarget.style.flexWrap = actionTarget.style.flexWrap || 'wrap';
+          }
+        }
+        actionTarget.appendChild(button);
+      }
+
+      function mountThemeDeleteButtons() {
+        if (!isThemePage()) {
+          Array.prototype.forEach.call(document.querySelectorAll('[data-xboard-theme-delete-button="1"]'), function (button) {
+            button.remove();
+          });
+          return;
+        }
+
+        themeEntries().forEach(function (theme) {
+          var name = theme.__name;
+          if (!name || !theme.can_delete || name === state.activeTheme) return;
+          appendThemeDeleteButton(findThemeContainer(name), name);
+        });
+      }
+
+      function handleThemeDeleteClick(event) {
+        var button = event.target && event.target.closest
+          ? event.target.closest('[data-xboard-theme-delete-button="1"]')
+          : null;
+        if (!button) return;
+        var themeName = button.getAttribute('data-theme-name');
+        if (!themeName) return;
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        if (!window.confirm('确认删除主题「' + themeName + '」？删除后主题文件和公开资源会被移除。')) return;
+
+        button.disabled = true;
+        button.textContent = '删除中...';
+        apiFetch('/theme/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: themeName })
+        }).then(function () {
+          notify('success', '主题已删除');
+          delete state.themeItems[themeName];
+          window.setTimeout(function () {
+            window.location.reload();
+          }, 500);
+        }).catch(function (error) {
+          button.disabled = false;
+          button.textContent = '删除主题';
+          notify('error', error.message || '主题删除失败');
+        });
+      }
+
       function mountKnowledgeTools() {
+        mountThemeDeleteButtons();
         if (!isKnowledgePage() && !isNoticePage()) {
           var existingAppleButton = document.getElementById('xboard-apple-id-manage-button');
           if (existingAppleButton) existingAppleButton.remove();
@@ -1296,6 +1481,7 @@
       patchRequestAuthCapture();
       window.setInterval(patchMonaco, 250);
       document.addEventListener('click', handleToolbarClick, true);
+      document.addEventListener('click', handleThemeDeleteClick, true);
 
       document.addEventListener('DOMContentLoaded', function () {
         new MutationObserver(function () {
