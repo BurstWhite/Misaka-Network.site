@@ -97,7 +97,9 @@
 	        appleActiveId: null,
 	        activeUrlInput: null,
 	        activeMirrorUrlInput: null,
-	        noticeItems: []
+	        noticeItems: [],
+	        toolsScheduled: false,
+	        lastToolsRunAt: 0
 	      };
 
       function getAccessToken() {
@@ -299,19 +301,31 @@
       }
 
       function normalizedText(element) {
-        return String((element && (element.innerText || element.textContent)) || '').replace(/\s+/g, ' ');
+        return String((element && (element.textContent || '')) || '').replace(/\s+/g, ' ');
+      }
+
+      function routeText() {
+        return String(location.pathname || '') + String(location.hash || '') + String(location.search || '');
+      }
+
+      function visiblePageTextMatches(pattern) {
+        var nodes = document.querySelectorAll('h1,h2,h3,h4,[class*="title"],[class*="Title"],button,a');
+        for (var i = 0; i < nodes.length; i++) {
+          if (visible(nodes[i]) && pattern.test(normalizedText(nodes[i]))) return true;
+        }
+        return false;
       }
 
       function isKnowledgePage() {
-        var route = String(location.pathname || '') + String(location.hash || '');
+        var route = routeText();
         if (/knowledge/i.test(route)) return true;
-        return document.body && /知识库|Knowledge Base/i.test(normalizedText(document.body));
+        return document.body && visiblePageTextMatches(/知识库|Knowledge Base/i);
       }
 
       function isNoticePage() {
-        var route = String(location.pathname || '') + String(location.hash || '');
+        var route = routeText();
         if (/notice/i.test(route)) return true;
-        return document.body && /公告管理|添加公告|编辑公告|Notice/i.test(normalizedText(document.body));
+        return document.body && visiblePageTextMatches(/公告管理|添加公告|编辑公告|Notice/i);
       }
 
       function trackEditor(editor) {
@@ -976,7 +990,6 @@
       }
 
       function handleToolbarClick(event) {
-        markImageUploadButtons();
         var button = event.target && event.target.closest
           ? event.target.closest('[data-xboard-knowledge-image-upload="1"],[data-xboard-notice-image-url-upload="1"]')
           : null;
@@ -1256,8 +1269,28 @@
       }
 
       function mountKnowledgeTools() {
+        if (!isKnowledgePage() && !isNoticePage()) {
+          var existingAppleButton = document.getElementById('xboard-apple-id-manage-button');
+          if (existingAppleButton) existingAppleButton.remove();
+          return;
+        }
         markImageUploadButtons();
         mountAppleButton();
+      }
+
+      function scheduleKnowledgeTools(delay) {
+        if (state.toolsScheduled) return;
+        state.toolsScheduled = true;
+        window.setTimeout(function () {
+          state.toolsScheduled = false;
+          var now = Date.now();
+          if (now - state.lastToolsRunAt < 120) {
+            scheduleKnowledgeTools(120);
+            return;
+          }
+          state.lastToolsRunAt = now;
+          mountKnowledgeTools();
+        }, delay || 80);
       }
 
       patchRequestAuthCapture();
@@ -1265,10 +1298,16 @@
       document.addEventListener('click', handleToolbarClick, true);
 
       document.addEventListener('DOMContentLoaded', function () {
-        new MutationObserver(mountKnowledgeTools).observe(document.body, { childList: true, subtree: true });
-        window.addEventListener('hashchange', mountKnowledgeTools);
-        window.setInterval(mountKnowledgeTools, 1000);
-        mountKnowledgeTools();
+        new MutationObserver(function () {
+          scheduleKnowledgeTools(80);
+        }).observe(document.body, { childList: true, subtree: true });
+        window.addEventListener('hashchange', function () {
+          scheduleKnowledgeTools(0);
+        });
+        window.setInterval(function () {
+          scheduleKnowledgeTools(0);
+        }, 1500);
+        scheduleKnowledgeTools(0);
       });
     })();
   </script>
