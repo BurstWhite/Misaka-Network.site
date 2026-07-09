@@ -602,34 +602,52 @@
 	    body.xboard-client-page .n-card.n-modal,
 	    body.xboard-client-page .n-dialog,
 	    body.xboard-client-page .n-drawer-content,
-	    body.xboard-client-page .n-popover {
+	    body.xboard-client-page .n-popover,
+	    body.xboard-client-page .n-dropdown-menu,
+	    body.xboard-client-page .n-date-panel,
+	    body.xboard-client-page .n-time-panel,
+	    body.xboard-client-page .n-color-picker-panel,
+	    body.xboard-client-page .n-base-select-menu,
+	    body.xboard-client-page .n-cascader-menu {
 	      position: relative;
 	      overflow: hidden;
 	      border: 1px solid rgba(255, 255, 255, .54) !important;
-	      backdrop-filter: blur(14px) saturate(1.08);
-	      -webkit-backdrop-filter: blur(14px) saturate(1.08);
+	      backdrop-filter: blur(8px) saturate(1.03);
+	      -webkit-backdrop-filter: blur(8px) saturate(1.03);
 	    }
 
 	    body.xboard-client-page .n-modal .n-card::before,
 	    body.xboard-client-page .n-card.n-modal::before,
 	    body.xboard-client-page .n-dialog::before,
 	    body.xboard-client-page .n-drawer-content::before,
-	    body.xboard-client-page .n-popover::before {
+	    body.xboard-client-page .n-popover::before,
+	    body.xboard-client-page .n-dropdown-menu::before,
+	    body.xboard-client-page .n-date-panel::before,
+	    body.xboard-client-page .n-time-panel::before,
+	    body.xboard-client-page .n-color-picker-panel::before,
+	    body.xboard-client-page .n-base-select-menu::before,
+	    body.xboard-client-page .n-cascader-menu::before {
 	      content: "";
 	      position: absolute;
 	      inset: 0;
 	      pointer-events: none;
 	      background:
-	        linear-gradient(135deg, rgba(255, 255, 255, .62), rgba(255, 255, 255, .18) 36%, rgba(255, 255, 255, .42) 100%),
-	        radial-gradient(circle at 12% 0%, rgba(255, 255, 255, .68), transparent 34%);
-	      opacity: .72;
+	        linear-gradient(135deg, rgba(255, 255, 255, .42), rgba(255, 255, 255, .10) 38%, rgba(255, 255, 255, .28) 100%),
+	        radial-gradient(circle at 12% 0%, rgba(255, 255, 255, .44), transparent 32%);
+	      opacity: .46;
 	    }
 
 	    body.xboard-client-page .n-modal .n-card > *,
 	    body.xboard-client-page .n-card.n-modal > *,
 	    body.xboard-client-page .n-dialog > *,
 	    body.xboard-client-page .n-drawer-content > *,
-	    body.xboard-client-page .n-popover > * {
+	    body.xboard-client-page .n-popover > *,
+	    body.xboard-client-page .n-dropdown-menu > *,
+	    body.xboard-client-page .n-date-panel > *,
+	    body.xboard-client-page .n-time-panel > *,
+	    body.xboard-client-page .n-color-picker-panel > *,
+	    body.xboard-client-page .n-base-select-menu > *,
+	    body.xboard-client-page .n-cascader-menu > * {
 	      position: relative;
 	      z-index: 1;
 	    }
@@ -672,27 +690,81 @@
 	      background: transparent !important;
 	    }
 
+	    html:not(.dark) body.xboard-client-page .n-modal-mask {
+	      background-color: rgba(15, 23, 42, .22) !important;
+	      backdrop-filter: blur(2px) saturate(1.02);
+	      -webkit-backdrop-filter: blur(2px) saturate(1.02);
+	    }
+
 	    html:not(.dark) body.xboard-client-page .n-modal .n-card,
 	    html:not(.dark) body.xboard-client-page .n-card.n-modal,
 	    html:not(.dark) body.xboard-client-page .n-dialog,
 	    html:not(.dark) body.xboard-client-page .n-drawer-content,
-	    html:not(.dark) body.xboard-client-page .n-popover {
-	      --n-color: rgba(255, 255, 255, .96) !important;
-	      --n-color-modal: rgba(255, 255, 255, .97) !important;
-	      --n-color-popover: rgba(255, 255, 255, .98) !important;
+	    html:not(.dark) body.xboard-client-page .n-popover,
+	    html:not(.dark) body.xboard-client-page .n-dropdown-menu,
+	    html:not(.dark) body.xboard-client-page .n-date-panel,
+	    html:not(.dark) body.xboard-client-page .n-time-panel,
+	    html:not(.dark) body.xboard-client-page .n-color-picker-panel,
+	    html:not(.dark) body.xboard-client-page .n-base-select-menu,
+	    html:not(.dark) body.xboard-client-page .n-cascader-menu {
+	      --n-color: rgba(255, 255, 255, .985) !important;
+	      --n-color-modal: rgba(255, 255, 255, .99) !important;
+	      --n-color-popover: rgba(255, 255, 255, .99) !important;
 	      --n-text-color: #0f172a !important;
 	      --n-title-text-color: #0f172a !important;
-	      --n-border-color: rgba(148, 163, 184, .26) !important;
-	      background-color: rgba(255, 255, 255, .96) !important;
+	      --n-border-color: rgba(148, 163, 184, .30) !important;
+	      background-color: rgba(255, 255, 255, .985) !important;
+	      background-image:
+	        linear-gradient(180deg, rgba(255, 255, 255, .96), rgba(248, 250, 252, .92)) !important;
 	      color: #0f172a !important;
-	      box-shadow: 0 18px 44px rgba(15, 23, 42, .14) !important;
+	      text-shadow: none !important;
+	      box-shadow: 0 18px 44px rgba(15, 23, 42, .12) !important;
+	    }
+
+	    html:not(.dark) body.xboard-client-page .n-modal .n-card::before,
+	    html:not(.dark) body.xboard-client-page .n-card.n-modal::before,
+	    html:not(.dark) body.xboard-client-page .n-dialog::before,
+	    html:not(.dark) body.xboard-client-page .n-drawer-content::before,
+	    html:not(.dark) body.xboard-client-page .n-popover::before,
+	    html:not(.dark) body.xboard-client-page .n-dropdown-menu::before,
+	    html:not(.dark) body.xboard-client-page .n-date-panel::before,
+	    html:not(.dark) body.xboard-client-page .n-time-panel::before,
+	    html:not(.dark) body.xboard-client-page .n-color-picker-panel::before,
+	    html:not(.dark) body.xboard-client-page .n-base-select-menu::before,
+	    html:not(.dark) body.xboard-client-page .n-cascader-menu::before {
+	      opacity: .30;
+	    }
+
+	    html:not(.dark) body.xboard-client-page .n-modal .n-card .markdown-body,
+	    html:not(.dark) body.xboard-client-page .n-card.n-modal .markdown-body,
+	    html:not(.dark) body.xboard-client-page .n-dialog .markdown-body,
+	    html:not(.dark) body.xboard-client-page .n-drawer-content .markdown-body,
+	    html:not(.dark) body.xboard-client-page .n-popover .markdown-body {
+	      --color-fg-default: #0f172a;
+	      --color-fg-muted: #334155;
+	      --color-canvas-default: rgba(255, 255, 255, .96);
+	      --color-canvas-subtle: rgba(248, 250, 252, .96);
+	      background: transparent !important;
+	      color: #0f172a !important;
+	    }
+
+	    html:not(.dark) body.xboard-client-page .n-modal .n-card .markdown-body table,
+	    html:not(.dark) body.xboard-client-page .n-card.n-modal .markdown-body table,
+	    html:not(.dark) body.xboard-client-page .n-dialog .markdown-body table {
+	      background: rgba(255, 255, 255, .98) !important;
 	    }
 
 	    html.dark body.xboard-client-page .n-modal .n-card,
 	    html.dark body.xboard-client-page .n-card.n-modal,
 	    html.dark body.xboard-client-page .n-dialog,
 	    html.dark body.xboard-client-page .n-drawer-content,
-	    html.dark body.xboard-client-page .n-popover {
+	    html.dark body.xboard-client-page .n-popover,
+	    html.dark body.xboard-client-page .n-dropdown-menu,
+	    html.dark body.xboard-client-page .n-date-panel,
+	    html.dark body.xboard-client-page .n-time-panel,
+	    html.dark body.xboard-client-page .n-color-picker-panel,
+	    html.dark body.xboard-client-page .n-base-select-menu,
+	    html.dark body.xboard-client-page .n-cascader-menu {
 	      --n-color: rgba(3, 7, 18, .88) !important;
 	      --n-color-modal: rgba(3, 7, 18, .92) !important;
 	      --n-color-popover: rgba(3, 7, 18, .94) !important;
@@ -709,7 +781,13 @@
 	    html.dark body.xboard-client-page .n-card.n-modal::before,
 	    html.dark body.xboard-client-page .n-dialog::before,
 	    html.dark body.xboard-client-page .n-drawer-content::before,
-	    html.dark body.xboard-client-page .n-popover::before {
+	    html.dark body.xboard-client-page .n-popover::before,
+	    html.dark body.xboard-client-page .n-dropdown-menu::before,
+	    html.dark body.xboard-client-page .n-date-panel::before,
+	    html.dark body.xboard-client-page .n-time-panel::before,
+	    html.dark body.xboard-client-page .n-color-picker-panel::before,
+	    html.dark body.xboard-client-page .n-base-select-menu::before,
+	    html.dark body.xboard-client-page .n-cascader-menu::before {
 	      background:
 	        linear-gradient(135deg, rgba(255, 255, 255, .13), rgba(0, 0, 0, .18) 42%, rgba(255, 255, 255, .08) 100%),
 	        radial-gradient(circle at 12% 0%, rgba(255, 255, 255, .16), transparent 34%);
@@ -721,6 +799,12 @@
 	    html.dark body.xboard-client-page .n-dialog,
 	    html.dark body.xboard-client-page .n-drawer-content,
 	    html.dark body.xboard-client-page .n-popover,
+	    html.dark body.xboard-client-page .n-dropdown-menu,
+	    html.dark body.xboard-client-page .n-date-panel,
+	    html.dark body.xboard-client-page .n-time-panel,
+	    html.dark body.xboard-client-page .n-color-picker-panel,
+	    html.dark body.xboard-client-page .n-base-select-menu,
+	    html.dark body.xboard-client-page .n-cascader-menu,
 	    html.dark body.xboard-client-page .n-modal .n-card .markdown-body,
 	    html.dark body.xboard-client-page .n-card.n-modal .markdown-body,
 	    html.dark body.xboard-client-page .n-dialog .markdown-body,
