@@ -906,6 +906,44 @@
 	      -webkit-backdrop-filter: none !important;
 	    }
 
+	    body.xboard-client-page .carousel-img,
+	    body.xboard-client-page .xboard-notice-hero {
+	      background: transparent !important;
+	    }
+
+	    body.xboard-client-page .carousel-img > div:last-child,
+	    body.xboard-client-page .xboard-notice-hero-meta {
+	      align-self: flex-start;
+	      max-width: min(78%, 520px);
+	      padding: 12px 16px;
+	      border: 1px solid rgba(255, 255, 255, .38);
+	      border-radius: 8px;
+	      background: rgba(255, 255, 255, .26);
+	      box-shadow: 0 12px 30px rgba(15, 23, 42, .18);
+	      color: #fff !important;
+	      text-shadow: 0 1px 3px rgba(15, 23, 42, .42);
+	      backdrop-filter: blur(14px) saturate(135%);
+	      -webkit-backdrop-filter: blur(14px) saturate(135%);
+	    }
+
+	    body.xboard-client-page .carousel-img > div:last-child p,
+	    body.xboard-client-page .xboard-notice-hero-meta p {
+	      margin: 0;
+	      color: #fff !important;
+	    }
+
+	    body.xboard-client-page .carousel-img > div:last-child p:first-child,
+	    body.xboard-client-page .xboard-notice-hero-meta p:first-child {
+	      font-weight: 800;
+	      line-height: 1.25;
+	    }
+
+	    body.xboard-client-page .carousel-img > div:last-child p + p,
+	    body.xboard-client-page .xboard-notice-hero-meta p + p {
+	      margin-top: 10px;
+	      color: rgba(255, 255, 255, .86) !important;
+	    }
+
     @media (max-width: 640px) {
       body.xboard-auth-page .xboard-auth-shell {
         padding: 18px;
@@ -924,6 +962,12 @@
       body.xboard-auth-page .xboard-auth-title {
         font-size: 24px;
       }
+
+	      body.xboard-client-page .carousel-img > div:last-child,
+	      body.xboard-client-page .xboard-notice-hero-meta {
+	        max-width: min(88%, 420px);
+	        padding: 10px 12px;
+	      }
     }
   </style>
   <script type="module" crossorigin src="/theme/{{$theme}}/assets/umi.js?v={{ $assetVersion }}"></script>
@@ -980,6 +1024,16 @@
 	      function isClientRoute() {
 	        var hash = window.location.hash || '';
 	        return hash && !isAuthRoute();
+	      }
+
+	      function enhanceNoticeCarousel() {
+	        if (!isClientRoute()) return;
+	        Array.prototype.forEach.call(document.querySelectorAll('.carousel-img'), function (hero) {
+	          hero.classList.add('xboard-notice-hero');
+	          hero.style.setProperty('background', 'transparent', 'important');
+	          var meta = hero.lastElementChild;
+	          if (meta) meta.classList.add('xboard-notice-hero-meta');
+	        });
 	      }
 
       function closestCard(element) {
@@ -1121,6 +1175,7 @@
 	        document.body.classList.toggle('xboard-client-page', !auth && isClientRoute());
 	        syncClientBackground();
 	        if (!auth) {
+	          enhanceNoticeCarousel();
           Array.prototype.forEach.call(document.querySelectorAll('.xboard-auth-shell'), function (shell) {
             shell.classList.remove('xboard-auth-shell');
           });
