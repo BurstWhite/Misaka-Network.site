@@ -247,11 +247,21 @@
         orderButton.parentElement.appendChild(button);
       }
 
+      var manualButtonFrame = 0;
+      function scheduleManualButton() {
+        if (manualButtonFrame) return;
+        var run = window.requestAnimationFrame || function (callback) { return setTimeout(callback, 80); };
+        manualButtonFrame = run(function () {
+          manualButtonFrame = 0;
+          mountManualButton();
+        });
+      }
+
       document.addEventListener('DOMContentLoaded', function () {
         mountManualButton();
-        new MutationObserver(mountManualButton).observe(document.body, { childList: true, subtree: true });
+        new MutationObserver(scheduleManualButton).observe(document.body, { childList: true, subtree: true });
         window.addEventListener('hashchange', function () {
-          setTimeout(mountManualButton, 200);
+          setTimeout(scheduleManualButton, 200);
         });
       });
     })();
@@ -295,7 +305,7 @@
 	        var(--xboard-client-bg-image, none);
 	      background-position: center;
 	      background-size: cover;
-	      backdrop-filter: blur(1px);
+	      backdrop-filter: none;
 	    }
 
     body.xboard-auth-page .xboard-auth-shell > * {
@@ -310,7 +320,7 @@
       box-shadow: 0 24px 70px rgba(15, 23, 42, .14) !important;
       background: var(--login-card-bg) !important;
       overflow: hidden;
-      backdrop-filter: blur(12px);
+      backdrop-filter: none;
     }
 
     body.xboard-auth-page .xboard-auth-card .n-card__content {
@@ -492,7 +502,7 @@
 	      background-image:
 	        linear-gradient(135deg, rgba(248, 250, 252, .94), rgba(239, 246, 255, .86) 48%, rgba(236, 253, 245, .78)),
 	        var(--xboard-client-bg-image, url('/theme/{{$theme}}/assets/images/background.svg'));
-	      background-attachment: fixed;
+	      background-attachment: scroll;
 	      background-position: center;
 	      background-size: cover;
 	    }
@@ -512,10 +522,10 @@
 	    }
 
 	    body.xboard-client-page .n-card {
-	      background: rgba(255, 255, 255, .82) !important;
+	      background: rgba(255, 255, 255, .94) !important;
 	      border-color: rgba(148, 163, 184, .24) !important;
 	      border-radius: 16px !important;
-	      box-shadow: 0 14px 36px rgba(15, 23, 42, .08) !important;
+	      box-shadow: 0 8px 22px rgba(15, 23, 42, .06) !important;
 	      overflow: hidden;
 	    }
 
@@ -544,7 +554,7 @@
 	      --n-border-color-hover: rgba(37, 99, 235, .46) !important;
 	      --n-border-color-focus: rgba(37, 99, 235, .62) !important;
 	      --n-border-color-active: #2563eb !important;
-	      --n-color: rgba(255, 255, 255, .84) !important;
+	      --n-color: rgba(255, 255, 255, .94) !important;
 	      --n-color-modal: rgba(255, 255, 255, .94) !important;
 	      --n-color-popover: rgba(255, 255, 255, .96) !important;
 	      --n-text-color: #0f172a !important;
@@ -588,10 +598,46 @@
 	      background: transparent !important;
 	    }
 
+	    body.xboard-client-page .n-modal .n-card,
+	    body.xboard-client-page .n-card.n-modal,
+	    body.xboard-client-page .n-dialog,
+	    body.xboard-client-page .n-drawer-content,
+	    body.xboard-client-page .n-popover {
+	      position: relative;
+	      overflow: hidden;
+	      border: 1px solid rgba(255, 255, 255, .54) !important;
+	      backdrop-filter: blur(14px) saturate(1.08);
+	      -webkit-backdrop-filter: blur(14px) saturate(1.08);
+	    }
+
+	    body.xboard-client-page .n-modal .n-card::before,
+	    body.xboard-client-page .n-card.n-modal::before,
+	    body.xboard-client-page .n-dialog::before,
+	    body.xboard-client-page .n-drawer-content::before,
+	    body.xboard-client-page .n-popover::before {
+	      content: "";
+	      position: absolute;
+	      inset: 0;
+	      pointer-events: none;
+	      background:
+	        linear-gradient(135deg, rgba(255, 255, 255, .62), rgba(255, 255, 255, .18) 36%, rgba(255, 255, 255, .42) 100%),
+	        radial-gradient(circle at 12% 0%, rgba(255, 255, 255, .68), transparent 34%);
+	      opacity: .72;
+	    }
+
+	    body.xboard-client-page .n-modal .n-card > *,
+	    body.xboard-client-page .n-card.n-modal > *,
+	    body.xboard-client-page .n-dialog > *,
+	    body.xboard-client-page .n-drawer-content > *,
+	    body.xboard-client-page .n-popover > * {
+	      position: relative;
+	      z-index: 1;
+	    }
+
 	    html:not(.dark) body.xboard-client-page .bg-gray-800 {
 	      background: rgba(255, 255, 255, .86) !important;
 	      border: 1px solid rgba(148, 163, 184, .22) !important;
-	      box-shadow: 0 14px 34px rgba(15, 23, 42, .08) !important;
+	      box-shadow: 0 8px 20px rgba(15, 23, 42, .06) !important;
 	    }
 
 	    html:not(.dark) body.xboard-client-page .text-white,
@@ -626,31 +672,61 @@
 	      background: transparent !important;
 	    }
 
-	    body.xboard-client-page .xboard-notice-background-dialog {
-	      overflow: hidden;
+	    html:not(.dark) body.xboard-client-page .n-modal .n-card,
+	    html:not(.dark) body.xboard-client-page .n-card.n-modal,
+	    html:not(.dark) body.xboard-client-page .n-dialog,
+	    html:not(.dark) body.xboard-client-page .n-drawer-content,
+	    html:not(.dark) body.xboard-client-page .n-popover {
+	      --n-color: rgba(255, 255, 255, .96) !important;
+	      --n-color-modal: rgba(255, 255, 255, .97) !important;
+	      --n-color-popover: rgba(255, 255, 255, .98) !important;
+	      --n-text-color: #0f172a !important;
+	      --n-title-text-color: #0f172a !important;
+	      --n-border-color: rgba(148, 163, 184, .26) !important;
+	      background-color: rgba(255, 255, 255, .96) !important;
+	      color: #0f172a !important;
+	      box-shadow: 0 18px 44px rgba(15, 23, 42, .14) !important;
 	    }
 
-	    body.xboard-client-page .xboard-notice-background-dialog .markdown-body {
-	      background: transparent !important;
+	    html.dark body.xboard-client-page .n-modal .n-card,
+	    html.dark body.xboard-client-page .n-card.n-modal,
+	    html.dark body.xboard-client-page .n-dialog,
+	    html.dark body.xboard-client-page .n-drawer-content,
+	    html.dark body.xboard-client-page .n-popover {
+	      --n-color: rgba(3, 7, 18, .88) !important;
+	      --n-color-modal: rgba(3, 7, 18, .92) !important;
+	      --n-color-popover: rgba(3, 7, 18, .94) !important;
+	      --n-text-color: #f8fafc !important;
+	      --n-title-text-color: #ffffff !important;
+	      --n-border-color: rgba(255, 255, 255, .16) !important;
+	      background-color: rgba(3, 7, 18, .90) !important;
+	      border-color: rgba(255, 255, 255, .16) !important;
+	      color: #f8fafc !important;
+	      box-shadow: 0 24px 64px rgba(0, 0, 0, .46) !important;
 	    }
 
-	    body.xboard-client-page .xboard-notice-cover {
-	      display: block;
-	      width: 100%;
-	      height: 190px;
-	      object-fit: cover;
-	      background: rgba(241, 245, 249, .84);
-	      border-bottom: 1px solid rgba(148, 163, 184, .18);
+	    html.dark body.xboard-client-page .n-modal .n-card::before,
+	    html.dark body.xboard-client-page .n-card.n-modal::before,
+	    html.dark body.xboard-client-page .n-dialog::before,
+	    html.dark body.xboard-client-page .n-drawer-content::before,
+	    html.dark body.xboard-client-page .n-popover::before {
+	      background:
+	        linear-gradient(135deg, rgba(255, 255, 255, .13), rgba(0, 0, 0, .18) 42%, rgba(255, 255, 255, .08) 100%),
+	        radial-gradient(circle at 12% 0%, rgba(255, 255, 255, .16), transparent 34%);
+	      opacity: .82;
 	    }
 
-	    html:not(.dark) body.xboard-client-page .xboard-notice-cover {
-	      border-color: rgba(148, 163, 184, .2);
-	    }
-
-	    @media (max-width: 640px) {
-	      body.xboard-client-page .xboard-notice-cover {
-	        height: 150px;
-	      }
+	    html.dark body.xboard-client-page .n-modal .n-card,
+	    html.dark body.xboard-client-page .n-card.n-modal,
+	    html.dark body.xboard-client-page .n-dialog,
+	    html.dark body.xboard-client-page .n-drawer-content,
+	    html.dark body.xboard-client-page .n-popover,
+	    html.dark body.xboard-client-page .n-modal .n-card .markdown-body,
+	    html.dark body.xboard-client-page .n-card.n-modal .markdown-body,
+	    html.dark body.xboard-client-page .n-dialog .markdown-body,
+	    html.dark body.xboard-client-page .n-drawer-content .markdown-body,
+	    html.dark body.xboard-client-page .n-popover .markdown-body {
+	      color: #f8fafc !important;
 	    }
 
     @media (max-width: 640px) {
@@ -704,7 +780,7 @@
   <div id="app"></div>
 	  <script>
 	    (function () {
-	      var noticeItems = [];
+	      var enhanceFrame = 0;
 
 	      function cssUrl(value) {
 	        value = String(value || '').trim();
@@ -879,116 +955,25 @@
         card.classList.add('xboard-auth-card');
         var shell = card.closest('.wh-full') || card.parentElement;
         if (shell) shell.classList.add('xboard-auth-shell');
-	        ensureBrand(card);
-	      }
+        ensureBrand(card);
+      }
 
-	      function rememberNotices(body) {
-	        var data = body && body.data;
-	        if (data && data.data) data = data.data;
-	        if (!Array.isArray(data)) return;
-	        noticeItems = data.filter(function (item) {
-	          return item && noticeImageUrl(item);
-	        });
-	        setTimeout(applyNoticeBackgrounds, 60);
-	      }
-
-	      function patchNoticeResponseCapture() {
-	        if (window.__xboardNoticeResponseCapture) return;
-	        window.__xboardNoticeResponseCapture = true;
-
-	        if (window.XMLHttpRequest) {
-	          var originalOpen = XMLHttpRequest.prototype.open;
-	          var originalSend = XMLHttpRequest.prototype.send;
-	          XMLHttpRequest.prototype.open = function (method, url) {
-	            this.__xboardNoticeUrl = String(url || '');
-	            return originalOpen.apply(this, arguments);
-	          };
-	          XMLHttpRequest.prototype.send = function () {
-	            var xhr = this;
-	            xhr.addEventListener('loadend', function () {
-	              if (String(xhr.__xboardNoticeUrl || '').indexOf('/user/notice/fetch') === -1) return;
-	              try {
-	                rememberNotices(JSON.parse(xhr.responseText));
-	              } catch (e) {}
-	            });
-	            return originalSend.apply(this, arguments);
-	          };
-	        }
-
-	        if (window.fetch) {
-	          var originalFetch = window.fetch;
-	          window.fetch = function (input) {
-	            var url = typeof input === 'string' ? input : (input && input.url) || '';
-	            return originalFetch.apply(this, arguments).then(function (response) {
-	              if (String(url).indexOf('/user/notice/fetch') !== -1) {
-	                response.clone().json().then(rememberNotices).catch(function () {});
-	              }
-	              return response;
-	            });
-	          };
-	        }
-	      }
-
-	      function textOf(element) {
-	        return String((element && (element.innerText || element.textContent)) || '').replace(/\s+/g, ' ');
-	      }
-
-	      function noticeImageUrl(notice) {
-	        return String((notice && (notice.img_url || notice.background_url || notice.cover_url || notice.image || notice.banner_url)) || '').trim();
-	      }
-
-	      function ensureNoticeCover(card, notice) {
-	        var url = noticeImageUrl(notice);
-	        if (!card || !url || card.getAttribute('data-xboard-notice-cover-url') === url) return;
-	        var oldCover = null;
-	        for (var i = 0; i < card.children.length; i++) {
-	          if (card.children[i].classList && card.children[i].classList.contains('xboard-notice-cover')) {
-	            oldCover = card.children[i];
-	            break;
-	          }
-	        }
-	        if (oldCover) oldCover.remove();
-	        var image = document.createElement('img');
-	        image.className = 'xboard-notice-cover';
-	        image.alt = notice.title || '公告背景图片';
-	        image.loading = 'lazy';
-	        image.decoding = 'async';
-	        image.src = url;
-	        image.onerror = function () {
-	          image.remove();
-	          card.removeAttribute('data-xboard-notice-cover-url');
-	        };
-	        card.insertBefore(image, card.firstElementChild || null);
-	        card.setAttribute('data-xboard-notice-cover-url', url);
-	      }
-
-	      function applyNoticeBackgrounds() {
-	        if (!noticeItems.length) return;
-	        var dialogs = Array.prototype.slice.call(document.querySelectorAll('.n-modal, .n-card, [role="dialog"]'));
-	        dialogs.forEach(function (dialog) {
-	          if (!dialog) return;
-	          var text = textOf(dialog);
-	          var notice = noticeItems.find(function (item) {
-	            return item.title && text.indexOf(item.title) !== -1;
-	          });
-	          if (!notice || !noticeImageUrl(notice)) return;
-	          var card = dialog.classList && dialog.classList.contains('n-card') ? dialog : dialog.querySelector('.n-card') || dialog;
-	          card.classList.add('xboard-notice-background-dialog');
-	          ensureNoticeCover(card, notice);
+	      function scheduleEnhanceAuthPage() {
+	        if (enhanceFrame) return;
+	        var run = window.requestAnimationFrame || function (callback) { return setTimeout(callback, 80); };
+	        enhanceFrame = run(function () {
+	          enhanceFrame = 0;
+	          enhanceAuthPage();
 	        });
 	      }
 
 	      document.addEventListener('DOMContentLoaded', function () {
-	        patchNoticeResponseCapture();
 	        enhanceAuthPage();
-	        new MutationObserver(function () {
-	          enhanceAuthPage();
-	          applyNoticeBackgrounds();
-	        }).observe(document.body, { childList: true, subtree: true });
+	        new MutationObserver(scheduleEnhanceAuthPage).observe(document.body, { childList: true, subtree: true });
 	        window.addEventListener('hashchange', function () {
-	          setTimeout(enhanceAuthPage, 120);
+	          setTimeout(scheduleEnhanceAuthPage, 120);
 	        });
-      });
+	      });
     })();
   </script>
   {!! $theme_config['custom_html'] !!}
