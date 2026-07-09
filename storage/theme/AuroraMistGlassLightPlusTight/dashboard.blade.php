@@ -182,6 +182,52 @@
             background-color: rgba(255, 255, 255, .92) !important;
             color: #0f172a !important;
         }
+
+        .carousel-img.xboard-notice-hero,
+        .carousel-img {
+            background: transparent !important;
+        }
+
+        .carousel-img > div:last-child,
+        .xboard-notice-hero-meta {
+            align-self: flex-start;
+            max-width: min(78%, 520px);
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, .38);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, .26);
+            box-shadow: 0 12px 30px rgba(15, 23, 42, .18);
+            color: #fff !important;
+            text-shadow: 0 1px 3px rgba(15, 23, 42, .42);
+            backdrop-filter: blur(14px) saturate(135%);
+            -webkit-backdrop-filter: blur(14px) saturate(135%);
+        }
+
+        .carousel-img > div:last-child p,
+        .xboard-notice-hero-meta p {
+            margin: 0;
+            color: #fff !important;
+        }
+
+        .carousel-img > div:last-child p:first-child,
+        .xboard-notice-hero-meta p:first-child {
+            font-weight: 800;
+            line-height: 1.25;
+        }
+
+        .carousel-img > div:last-child p + p,
+        .xboard-notice-hero-meta p + p {
+            margin-top: 10px;
+            color: rgba(255, 255, 255, .86) !important;
+        }
+
+        @media (max-width: 640px) {
+            .carousel-img > div:last-child,
+            .xboard-notice-hero-meta {
+                max-width: min(88%, 420px);
+                padding: 10px 12px;
+            }
+        }
     </style>
     <script type="module" crossorigin src="/theme/{{ $themeName }}/assets/umi.js?v={{ $assetVersion }}"></script>
 </head>
@@ -211,6 +257,38 @@
     </script>
 
     <div id="app"></div>
+
+    <script>
+        (function () {
+            function polishNoticeCarousel() {
+                Array.prototype.forEach.call(document.querySelectorAll('.carousel-img'), function (hero) {
+                    hero.classList.add('xboard-notice-hero');
+                    hero.style.setProperty('background', 'transparent', 'important');
+                    var meta = hero.lastElementChild;
+                    if (meta) meta.classList.add('xboard-notice-hero-meta');
+                });
+            }
+
+            var pending = 0;
+            function schedulePolish() {
+                if (pending) return;
+                pending = 1;
+                var run = window.requestAnimationFrame || function (callback) { return setTimeout(callback, 80); };
+                run(function () {
+                    pending = 0;
+                    polishNoticeCarousel();
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', schedulePolish);
+            } else {
+                schedulePolish();
+            }
+            window.addEventListener('hashchange', schedulePolish);
+            new MutationObserver(schedulePolish).observe(document.documentElement, { childList: true, subtree: true });
+        })();
+    </script>
 
     <script defer src="/theme/{{ $themeName }}/assets/aurora-mist-light-plus.js?v={{ $assetVersion }}"></script>
     <noscript>
