@@ -165,7 +165,10 @@ Route::get('/', function (Request $request) {
             'theme_config' => $themeService->getConfig($theme)
         ];
         $html = view('theme::' . $theme . '.dashboard', $renderParams)->render();
-        return response(inject_auth_layout_patch($html, $renderParams));
+        return response(inject_auth_layout_patch($html, $renderParams))
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     } catch (Exception $e) {
         Log::error('Theme rendering failed', [
             'theme' => $theme,

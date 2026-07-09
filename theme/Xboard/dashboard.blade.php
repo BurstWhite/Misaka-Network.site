@@ -5,13 +5,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no" />
   <title>{{$title}}</title>
-  @php
-    $logoUrl = trim((string) $logo);
-    $backgroundUrl = trim((string) ($theme_config['background_url'] ?? ''));
-    $assetOrigins = [];
-    foreach ([$logoUrl, $backgroundUrl] as $assetUrl) {
-      $parts = parse_url($assetUrl);
-      if (!empty($parts['scheme']) && !empty($parts['host'])) {
+	  @php
+	    $logoUrl = trim((string) $logo);
+	    $backgroundUrl = trim((string) ($theme_config['background_url'] ?? ''));
+	    $dashboardPath = base_path("theme/{$theme}/dashboard.blade.php");
+	    $assetVersion = is_file($dashboardPath) ? substr(md5_file($dashboardPath), 0, 12) : $version;
+	    $assetOrigins = [];
+	    foreach ([$logoUrl, $backgroundUrl] as $assetUrl) {
+	      $parts = parse_url($assetUrl);
+	      if (!empty($parts['scheme']) && !empty($parts['host'])) {
         $origin = $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
         $assetOrigins[$origin] = $origin;
       }
@@ -817,6 +819,93 @@
 	      color: #f8fafc !important;
 	    }
 
+	    :root {
+	      --xboard-overlay-revision: "soft-card-20260709-2";
+	    }
+
+	    html:not(.dark) .n-modal-mask {
+	      background-color: rgba(15, 23, 42, .16) !important;
+	      backdrop-filter: none !important;
+	      -webkit-backdrop-filter: none !important;
+	    }
+
+	    html:not(.dark) .n-modal-container .n-modal,
+	    html:not(.dark) .n-modal-container .n-card,
+	    html:not(.dark) .n-modal-container .n-dialog {
+	      --n-color: rgba(255, 255, 255, .96) !important;
+	      --n-color-modal: rgba(255, 255, 255, .96) !important;
+	      --n-text-color: #0f172a !important;
+	      --n-title-text-color: #0f172a !important;
+	      --n-border-color: rgba(203, 213, 225, .64) !important;
+	      background-color: rgba(255, 255, 255, .96) !important;
+	      background-image:
+	        linear-gradient(135deg, rgba(255, 255, 255, .98), rgba(248, 250, 252, .92) 42%, rgba(207, 250, 254, .45) 100%),
+	        radial-gradient(circle at 84% 24%, rgba(187, 247, 208, .30), transparent 42%) !important;
+	      border: 1px solid rgba(203, 213, 225, .64) !important;
+	      box-shadow: 0 18px 42px rgba(15, 23, 42, .10) !important;
+	      color: #0f172a !important;
+	      opacity: 1 !important;
+	      text-shadow: none !important;
+	      backdrop-filter: none !important;
+	      -webkit-backdrop-filter: none !important;
+	    }
+
+	    html:not(.dark) .n-modal-container .n-card::before,
+	    html:not(.dark) .n-modal-container .n-card::after,
+	    html:not(.dark) .n-modal-container .n-dialog::before,
+	    html:not(.dark) .n-modal-container .n-dialog::after {
+	      content: none !important;
+	      display: none !important;
+	    }
+
+	    html:not(.dark) .n-modal-container .n-card *,
+	    html:not(.dark) .n-modal-container .n-dialog * {
+	      text-shadow: none !important;
+	      backdrop-filter: none !important;
+	      -webkit-backdrop-filter: none !important;
+	    }
+
+	    html:not(.dark) .n-modal-container .n-card-header,
+	    html:not(.dark) .n-modal-container .n-card__content,
+	    html:not(.dark) .n-modal-container .n-card__footer,
+	    html:not(.dark) .n-modal-container .n-dialog__content,
+	    html:not(.dark) .n-modal-container .markdown-body {
+	      background: transparent !important;
+	      color: #0f172a !important;
+	    }
+
+	    html:not(.dark) .n-modal-container [class*="bg-gray-800"],
+	    html:not(.dark) .n-modal-container [class*="bg-gray-900"],
+	    html:not(.dark) .n-modal-container [class*="bg-slate-"],
+	    html:not(.dark) .n-modal-container [class*="bg-black"],
+	    html:not(.dark) .n-modal-container [class*="bg-dark"] {
+	      background: transparent !important;
+	      color: #0f172a !important;
+	    }
+
+	    html:not(.dark) .n-modal-container [class*="text-white"],
+	    html:not(.dark) .n-modal-container [class*="text-gray-100"],
+	    html:not(.dark) .n-modal-container [class*="text-gray-200"],
+	    html:not(.dark) .n-modal-container [class*="color-#f8f9fa"] {
+	      color: #0f172a !important;
+	    }
+
+	    html:not(.dark) .n-modal-container .markdown-body table,
+	    html:not(.dark) .n-modal-container .markdown-body th,
+	    html:not(.dark) .n-modal-container .markdown-body td {
+	      background-color: rgba(255, 255, 255, .92) !important;
+	      color: #0f172a !important;
+	    }
+
+	    html.dark .n-modal-container .n-modal,
+	    html.dark .n-modal-container .n-card,
+	    html.dark .n-modal-container .n-dialog {
+	      background-color: rgba(15, 23, 42, .96) !important;
+	      background-image: linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(30, 41, 59, .94) 58%, rgba(6, 78, 59, .30)) !important;
+	      backdrop-filter: none !important;
+	      -webkit-backdrop-filter: none !important;
+	    }
+
     @media (max-width: 640px) {
       body.xboard-auth-page .xboard-auth-shell {
         padding: 18px;
@@ -837,7 +926,7 @@
       }
     }
   </style>
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/umi.js"></script>
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/umi.js?v={{ $assetVersion }}"></script>
 </head>
 
 <body>
