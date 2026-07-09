@@ -612,9 +612,9 @@
 	    body.xboard-client-page .n-image-preview-toolbar {
 	      position: relative;
 	      overflow: hidden;
-	      border: 1px solid rgba(255, 255, 255, .54) !important;
-	      backdrop-filter: blur(8px) saturate(1.03);
-	      -webkit-backdrop-filter: blur(8px) saturate(1.03);
+	      border: 1px solid rgba(203, 213, 225, .58) !important;
+	      backdrop-filter: none !important;
+	      -webkit-backdrop-filter: none !important;
 	    }
 
 	    body.xboard-client-page .n-modal .n-card::before,
@@ -629,14 +629,7 @@
 	    body.xboard-client-page .n-base-select-menu::before,
 	    body.xboard-client-page .n-cascader-menu::before,
 	    body.xboard-client-page .n-image-preview-toolbar::before {
-	      content: "";
-	      position: absolute;
-	      inset: 0;
-	      pointer-events: none;
-	      background:
-	        linear-gradient(135deg, rgba(255, 255, 255, .42), rgba(255, 255, 255, .10) 38%, rgba(255, 255, 255, .28) 100%),
-	        radial-gradient(circle at 12% 0%, rgba(255, 255, 255, .44), transparent 32%);
-	      opacity: .46;
+	      display: none;
 	    }
 
 	    body.xboard-client-page .n-modal .n-card > *,
@@ -694,15 +687,15 @@
 	    }
 
 	    html:not(.dark) body.xboard-client-page .n-modal-mask {
-	      background-color: rgba(15, 23, 42, .22) !important;
-	      backdrop-filter: blur(2px) saturate(1.02);
-	      -webkit-backdrop-filter: blur(2px) saturate(1.02);
+	      background-color: rgba(15, 23, 42, .18) !important;
+	      backdrop-filter: none !important;
+	      -webkit-backdrop-filter: none !important;
 	    }
 
 	    html:not(.dark) body.xboard-client-page .n-image-preview-overlay {
-	      background-color: rgba(15, 23, 42, .18) !important;
-	      backdrop-filter: blur(1px) saturate(1.02);
-	      -webkit-backdrop-filter: blur(1px) saturate(1.02);
+	      background-color: rgba(15, 23, 42, .16) !important;
+	      backdrop-filter: none !important;
+	      -webkit-backdrop-filter: none !important;
 	    }
 
 	    html:not(.dark) body.xboard-client-page .n-modal .n-card,
@@ -717,33 +710,27 @@
 	    html:not(.dark) body.xboard-client-page .n-base-select-menu,
 	    html:not(.dark) body.xboard-client-page .n-cascader-menu,
 	    html:not(.dark) body.xboard-client-page .n-image-preview-toolbar {
-	      --n-color: rgba(255, 255, 255, .985) !important;
-	      --n-color-modal: rgba(255, 255, 255, .99) !important;
-	      --n-color-popover: rgba(255, 255, 255, .99) !important;
+	      --n-color: rgba(255, 255, 255, .94) !important;
+	      --n-color-modal: rgba(255, 255, 255, .94) !important;
+	      --n-color-popover: rgba(255, 255, 255, .95) !important;
 	      --n-text-color: #0f172a !important;
 	      --n-title-text-color: #0f172a !important;
-	      --n-border-color: rgba(148, 163, 184, .30) !important;
-	      background-color: rgba(255, 255, 255, .985) !important;
+	      --n-border-color: rgba(203, 213, 225, .62) !important;
+	      background-color: rgba(255, 255, 255, .94) !important;
 	      background-image:
-	        linear-gradient(180deg, rgba(255, 255, 255, .96), rgba(248, 250, 252, .92)) !important;
+	        linear-gradient(135deg, rgba(255, 255, 255, .96), rgba(248, 250, 252, .90) 42%, rgba(207, 250, 254, .42) 100%),
+	        radial-gradient(circle at 82% 28%, rgba(187, 247, 208, .32), transparent 44%) !important;
 	      color: #0f172a !important;
 	      text-shadow: none !important;
-	      box-shadow: 0 18px 44px rgba(15, 23, 42, .12) !important;
+	      box-shadow: 0 18px 44px rgba(15, 23, 42, .10) !important;
 	    }
 
-	    html:not(.dark) body.xboard-client-page .n-modal .n-card::before,
-	    html:not(.dark) body.xboard-client-page .n-card.n-modal::before,
-	    html:not(.dark) body.xboard-client-page .n-dialog::before,
-	    html:not(.dark) body.xboard-client-page .n-drawer-content::before,
-	    html:not(.dark) body.xboard-client-page .n-popover::before,
-	    html:not(.dark) body.xboard-client-page .n-dropdown-menu::before,
-	    html:not(.dark) body.xboard-client-page .n-date-panel::before,
-	    html:not(.dark) body.xboard-client-page .n-time-panel::before,
-	    html:not(.dark) body.xboard-client-page .n-color-picker-panel::before,
-	    html:not(.dark) body.xboard-client-page .n-base-select-menu::before,
-	    html:not(.dark) body.xboard-client-page .n-cascader-menu::before,
-	    html:not(.dark) body.xboard-client-page .n-image-preview-toolbar::before {
-	      opacity: .30;
+	    html:not(.dark) body.xboard-client-page .n-modal .n-card .n-card-header,
+	    html:not(.dark) body.xboard-client-page .n-card.n-modal .n-card-header,
+	    html:not(.dark) body.xboard-client-page .n-dialog .n-dialog__title,
+	    html:not(.dark) body.xboard-client-page .n-drawer-content .n-drawer-header {
+	      background: rgba(248, 250, 252, .68) !important;
+	      border-color: rgba(203, 213, 225, .46) !important;
 	    }
 
 	    html:not(.dark) body.xboard-client-page .n-modal .n-card .markdown-body,
@@ -777,16 +764,18 @@
 	    html.dark body.xboard-client-page .n-base-select-menu,
 	    html.dark body.xboard-client-page .n-cascader-menu,
 	    html.dark body.xboard-client-page .n-image-preview-toolbar {
-	      --n-color: rgba(3, 7, 18, .88) !important;
-	      --n-color-modal: rgba(3, 7, 18, .92) !important;
-	      --n-color-popover: rgba(3, 7, 18, .94) !important;
+	      --n-color: rgba(15, 23, 42, .96) !important;
+	      --n-color-modal: rgba(15, 23, 42, .96) !important;
+	      --n-color-popover: rgba(15, 23, 42, .96) !important;
 	      --n-text-color: #f8fafc !important;
 	      --n-title-text-color: #ffffff !important;
-	      --n-border-color: rgba(255, 255, 255, .16) !important;
-	      background-color: rgba(3, 7, 18, .90) !important;
-	      border-color: rgba(255, 255, 255, .16) !important;
+	      --n-border-color: rgba(148, 163, 184, .22) !important;
+	      background-color: rgba(15, 23, 42, .96) !important;
+	      background-image:
+	        linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(30, 41, 59, .94) 52%, rgba(6, 78, 59, .34)) !important;
+	      border-color: rgba(148, 163, 184, .22) !important;
 	      color: #f8fafc !important;
-	      box-shadow: 0 24px 64px rgba(0, 0, 0, .46) !important;
+	      box-shadow: 0 24px 64px rgba(0, 0, 0, .38) !important;
 	    }
 
 	    html.dark body.xboard-client-page .n-modal .n-card::before,
@@ -801,10 +790,7 @@
 	    html.dark body.xboard-client-page .n-base-select-menu::before,
 	    html.dark body.xboard-client-page .n-cascader-menu::before,
 	    html.dark body.xboard-client-page .n-image-preview-toolbar::before {
-	      background:
-	        linear-gradient(135deg, rgba(255, 255, 255, .13), rgba(0, 0, 0, .18) 42%, rgba(255, 255, 255, .08) 100%),
-	        radial-gradient(circle at 12% 0%, rgba(255, 255, 255, .16), transparent 34%);
-	      opacity: .82;
+	      display: none;
 	    }
 
 	    html.dark body.xboard-client-page .n-image-preview-overlay {
