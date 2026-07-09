@@ -500,7 +500,7 @@
 	      min-height: 100vh;
 	      background-color: #f8fafc;
 	      background-image:
-	        linear-gradient(135deg, rgba(248, 250, 252, .94), rgba(239, 246, 255, .86) 48%, rgba(236, 253, 245, .78)),
+	        linear-gradient(135deg, rgba(248, 250, 252, .82), rgba(239, 246, 255, .72) 48%, rgba(236, 253, 245, .62)),
 	        var(--xboard-client-bg-image, url('/theme/{{$theme}}/assets/images/background.svg'));
 	      background-attachment: scroll;
 	      background-position: center;
@@ -608,7 +608,8 @@
 	    body.xboard-client-page .n-time-panel,
 	    body.xboard-client-page .n-color-picker-panel,
 	    body.xboard-client-page .n-base-select-menu,
-	    body.xboard-client-page .n-cascader-menu {
+	    body.xboard-client-page .n-cascader-menu,
+	    body.xboard-client-page .n-image-preview-toolbar {
 	      position: relative;
 	      overflow: hidden;
 	      border: 1px solid rgba(255, 255, 255, .54) !important;
@@ -626,7 +627,8 @@
 	    body.xboard-client-page .n-time-panel::before,
 	    body.xboard-client-page .n-color-picker-panel::before,
 	    body.xboard-client-page .n-base-select-menu::before,
-	    body.xboard-client-page .n-cascader-menu::before {
+	    body.xboard-client-page .n-cascader-menu::before,
+	    body.xboard-client-page .n-image-preview-toolbar::before {
 	      content: "";
 	      position: absolute;
 	      inset: 0;
@@ -647,7 +649,8 @@
 	    body.xboard-client-page .n-time-panel > *,
 	    body.xboard-client-page .n-color-picker-panel > *,
 	    body.xboard-client-page .n-base-select-menu > *,
-	    body.xboard-client-page .n-cascader-menu > * {
+	    body.xboard-client-page .n-cascader-menu > *,
+	    body.xboard-client-page .n-image-preview-toolbar > * {
 	      position: relative;
 	      z-index: 1;
 	    }
@@ -696,6 +699,12 @@
 	      -webkit-backdrop-filter: blur(2px) saturate(1.02);
 	    }
 
+	    html:not(.dark) body.xboard-client-page .n-image-preview-overlay {
+	      background-color: rgba(15, 23, 42, .18) !important;
+	      backdrop-filter: blur(1px) saturate(1.02);
+	      -webkit-backdrop-filter: blur(1px) saturate(1.02);
+	    }
+
 	    html:not(.dark) body.xboard-client-page .n-modal .n-card,
 	    html:not(.dark) body.xboard-client-page .n-card.n-modal,
 	    html:not(.dark) body.xboard-client-page .n-dialog,
@@ -706,7 +715,8 @@
 	    html:not(.dark) body.xboard-client-page .n-time-panel,
 	    html:not(.dark) body.xboard-client-page .n-color-picker-panel,
 	    html:not(.dark) body.xboard-client-page .n-base-select-menu,
-	    html:not(.dark) body.xboard-client-page .n-cascader-menu {
+	    html:not(.dark) body.xboard-client-page .n-cascader-menu,
+	    html:not(.dark) body.xboard-client-page .n-image-preview-toolbar {
 	      --n-color: rgba(255, 255, 255, .985) !important;
 	      --n-color-modal: rgba(255, 255, 255, .99) !important;
 	      --n-color-popover: rgba(255, 255, 255, .99) !important;
@@ -731,7 +741,8 @@
 	    html:not(.dark) body.xboard-client-page .n-time-panel::before,
 	    html:not(.dark) body.xboard-client-page .n-color-picker-panel::before,
 	    html:not(.dark) body.xboard-client-page .n-base-select-menu::before,
-	    html:not(.dark) body.xboard-client-page .n-cascader-menu::before {
+	    html:not(.dark) body.xboard-client-page .n-cascader-menu::before,
+	    html:not(.dark) body.xboard-client-page .n-image-preview-toolbar::before {
 	      opacity: .30;
 	    }
 
@@ -764,7 +775,8 @@
 	    html.dark body.xboard-client-page .n-time-panel,
 	    html.dark body.xboard-client-page .n-color-picker-panel,
 	    html.dark body.xboard-client-page .n-base-select-menu,
-	    html.dark body.xboard-client-page .n-cascader-menu {
+	    html.dark body.xboard-client-page .n-cascader-menu,
+	    html.dark body.xboard-client-page .n-image-preview-toolbar {
 	      --n-color: rgba(3, 7, 18, .88) !important;
 	      --n-color-modal: rgba(3, 7, 18, .92) !important;
 	      --n-color-popover: rgba(3, 7, 18, .94) !important;
@@ -787,11 +799,16 @@
 	    html.dark body.xboard-client-page .n-time-panel::before,
 	    html.dark body.xboard-client-page .n-color-picker-panel::before,
 	    html.dark body.xboard-client-page .n-base-select-menu::before,
-	    html.dark body.xboard-client-page .n-cascader-menu::before {
+	    html.dark body.xboard-client-page .n-cascader-menu::before,
+	    html.dark body.xboard-client-page .n-image-preview-toolbar::before {
 	      background:
 	        linear-gradient(135deg, rgba(255, 255, 255, .13), rgba(0, 0, 0, .18) 42%, rgba(255, 255, 255, .08) 100%),
 	        radial-gradient(circle at 12% 0%, rgba(255, 255, 255, .16), transparent 34%);
 	      opacity: .82;
+	    }
+
+	    html.dark body.xboard-client-page .n-image-preview-overlay {
+	      background-color: rgba(0, 0, 0, .62) !important;
 	    }
 
 	    html.dark body.xboard-client-page .n-modal .n-card,
@@ -805,6 +822,7 @@
 	    html.dark body.xboard-client-page .n-color-picker-panel,
 	    html.dark body.xboard-client-page .n-base-select-menu,
 	    html.dark body.xboard-client-page .n-cascader-menu,
+	    html.dark body.xboard-client-page .n-image-preview-toolbar,
 	    html.dark body.xboard-client-page .n-modal .n-card .markdown-body,
 	    html.dark body.xboard-client-page .n-card.n-modal .markdown-body,
 	    html.dark body.xboard-client-page .n-dialog .markdown-body,
