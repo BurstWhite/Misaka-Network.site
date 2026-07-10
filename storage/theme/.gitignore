@@ -1,7 +1,2 @@
 *
 !.gitignore
-!AuroraMistGlassLightPlusTight/
-!AuroraMistGlassLightPlusTight/config.json
-!AuroraMistGlassLightPlusTight/dashboard.blade.php
-!AuroraMistGlassLightPlusTight/assets/
-!AuroraMistGlassLightPlusTight/assets/**
