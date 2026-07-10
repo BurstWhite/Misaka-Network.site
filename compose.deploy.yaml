@@ -1,0 +1,6 @@
+# Deployment-only override. scripts/deploy-container.sh supplies XBOARD_IMAGE
+# as an immutable GHCR tag, while the base Compose file keeps environment-
+# specific ports, volumes and networks.
+services:
+  xboard:
+    image: ${XBOARD_IMAGE:?XBOARD_IMAGE must be set by the deployment script}

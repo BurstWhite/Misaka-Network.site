@@ -1,0 +1,113 @@
+name: Production Deploy
+
+on:
+  workflow_run:
+    workflows: ["Docker Build and Publish"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: GHCR image tag to deploy
+        required: true
+        default: latest
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'master')
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+    env:
+      SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+      SSH_PORT: ${{ secrets.PRODUCTION_SSH_PORT || '22' }}
+      SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
+      DEPLOY_PATH: ${{ secrets.PRODUCTION_PATH }}
+      DEPLOY_BRANCH: ${{ vars.PRODUCTION_BRANCH || 'master' }}
+
+    steps:
+      - name: Select immutable image
+        id: image
+        env:
+          WORKFLOW_RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          MANUAL_IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          set -Eeuo pipefail
+          repository="${GITHUB_REPOSITORY,,}"
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_run" ]; then
+            tag="${WORKFLOW_RUN_SHA}"
+          else
+            tag="${MANUAL_IMAGE_TAG}"
+          fi
+          if ! [[ "${tag}" =~ ^[A-Za-z0-9_.-]+$ ]]; then
+            echo "Invalid image tag." >&2
+            exit 1
+          fi
+          echo "image=ghcr.io/${repository}:${tag}" >> "${GITHUB_OUTPUT}"
+
+      - name: Configure SSH
+        run: |
+          set -Eeuo pipefail
+          for value in SSH_HOST SSH_PORT SSH_USER SSH_PRIVATE_KEY SSH_KNOWN_HOSTS DEPLOY_PATH; do
+            if [ -z "${!value:-}" ]; then
+              echo "Missing required production secret: ${value}" >&2
+              exit 1
+            fi
+          done
+          if ! [[ "${SSH_PORT}" =~ ^[0-9]+$ ]]; then
+            echo "PRODUCTION_SSH_PORT must be numeric." >&2
+            exit 1
+          fi
+          if ! [[ "${DEPLOY_PATH}" =~ ^/[A-Za-z0-9._/-]+$ ]]; then
+            echo "PRODUCTION_PATH must be an absolute path without spaces." >&2
+            exit 1
+          fi
+          if ! [[ "${DEPLOY_BRANCH}" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+            echo "PRODUCTION_BRANCH contains unsupported characters." >&2
+            exit 1
+          fi
+          install -m 700 -d "${HOME}/.ssh"
+          printf '%s\n' "${SSH_PRIVATE_KEY}" > "${HOME}/.ssh/production"
+          chmod 600 "${HOME}/.ssh/production"
+          printf '%s\n' "${SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
+          chmod 600 "${HOME}/.ssh/known_hosts"
+
+      - name: Deploy and health check
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
+        run: |
+          set -Eeuo pipefail
+          ssh \
+            -i "${HOME}/.ssh/production" \
+            -p "${SSH_PORT}" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            "${SSH_USER}@${SSH_HOST}" \
+            bash -s -- "${DEPLOY_PATH}" "${DEPLOY_BRANCH}" "${IMAGE}" <<'REMOTE'
+          set -Eeuo pipefail
+          project_root="$1"
+          deploy_branch="$2"
+          image="$3"
+
+          cd "${project_root}"
+          if [ "$(git branch --show-current)" != "${deploy_branch}" ]; then
+            echo "Production checkout is not on ${deploy_branch}." >&2
+            exit 1
+          fi
+          git diff --quiet
+          git diff --cached --quiet
+          git fetch --prune origin "${deploy_branch}"
+          git merge --ff-only "origin/${deploy_branch}"
+          ./scripts/deploy-container.sh "${image}"
+          REMOTE

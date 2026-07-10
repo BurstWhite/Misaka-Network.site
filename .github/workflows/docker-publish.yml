@@ -59,6 +59,7 @@ jobs:
           tags: |
             type=ref,event=branch
             type=sha,format=short,prefix=,enable=true
+            type=sha,format=long,prefix=,enable=true
             type=raw,value=new,enable=${{ github.ref == 'refs/heads/master' }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
             type=raw,value=${{ steps.get_version.outputs.version }}
@@ -97,4 +98,3 @@ jobs:
           outputs: type=registry,push=true
           allow: |
             network.host
-

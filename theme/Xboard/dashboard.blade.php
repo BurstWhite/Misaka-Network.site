@@ -352,6 +352,10 @@
       border-radius: 4px;
     }
 
+    body.xboard-auth-page .xboard-auth-logo-source {
+      display: none !important;
+    }
+
     body.xboard-auth-page .xboard-auth-card img:not(.xboard-auth-logo) {
       max-width: 100% !important;
       max-height: 64px !important;
@@ -1090,7 +1094,9 @@
       }
 
       function authLogoCandidate(card) {
-        var images = Array.prototype.slice.call(card.querySelectorAll('img'));
+        var images = Array.prototype.slice.call(card.querySelectorAll('img')).filter(function (image) {
+          return !image.closest || !image.closest('.xboard-auth-brand');
+        });
         if (!images.length) return null;
         images.sort(function (a, b) {
           var ar = a.getBoundingClientRect();
@@ -1100,21 +1106,38 @@
         return images[0];
       }
 
+      function normalizedImageUrl(value) {
+        if (!value) return '';
+        var anchor = document.createElement('a');
+        anchor.href = value;
+        return anchor.href;
+      }
+
       function ensureAuthLogo(brand, card) {
         var settings = window.settings || {};
-        var logo = authLogoCandidate(card);
-        if (!logo && settings.logo) {
+        var logo = brand.querySelector('[data-xboard-auth-logo="1"]');
+        var source = authLogoCandidate(card);
+        if (!logo) {
+          var sourceUrl = settings.logo || (source && (source.currentSrc || source.src));
+          if (!sourceUrl) return null;
           logo = document.createElement('img');
-          logo.src = settings.logo;
+          logo.src = sourceUrl;
           logo.alt = settings.title || 'XBoard';
+          logo.setAttribute('data-xboard-auth-logo', '1');
           brand.insertBefore(logo, brand.firstChild || null);
         }
-        if (!logo) return null;
-        if (logo.parentElement !== brand) brand.insertBefore(logo, brand.firstChild || null);
         logo.classList.add('xboard-auth-logo');
         logo.loading = 'eager';
         logo.decoding = 'async';
         if ('fetchPriority' in logo) logo.fetchPriority = 'high';
+
+        var logoUrl = normalizedImageUrl(logo.currentSrc || logo.src);
+        Array.prototype.forEach.call(card.querySelectorAll('img'), function (image) {
+          if (image === logo || (image.closest && image.closest('.xboard-auth-brand'))) return;
+          if (logoUrl && normalizedImageUrl(image.currentSrc || image.src) === logoUrl) {
+            image.classList.add('xboard-auth-logo-source');
+          }
+        });
         return logo;
       }
 
