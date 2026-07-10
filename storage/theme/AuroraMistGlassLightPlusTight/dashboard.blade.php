@@ -8,11 +8,21 @@
         $file = \Illuminate\Support\Facades\File::class;
         $publicAssetsPath = public_path('theme/' . $themeName . '/assets');
         $systemAssetsPath = base_path('theme/Xboard/assets');
-        if (!$file::exists($publicAssetsPath . '/umi.js') && $file::exists($systemAssetsPath . '/umi.js')) {
+        $themeAssetsPath = base_path("storage/theme/{$themeName}/assets");
+        $requiredAssets = [
+            $publicAssetsPath . '/umi.js',
+            $publicAssetsPath . '/aurora-mist-light-plus.css',
+            $publicAssetsPath . '/aurora-mist-light-plus.js',
+        ];
+        $assetsMissing = collect($requiredAssets)->contains(fn ($path) => !$file::exists($path));
+        if ($assetsMissing && $file::exists($systemAssetsPath . '/umi.js')) {
             if (!$file::isDirectory($publicAssetsPath)) {
                 $file::makeDirectory($publicAssetsPath, 0755, true, true);
             }
             $file::copyDirectory($systemAssetsPath, $publicAssetsPath);
+            if ($file::isDirectory($themeAssetsPath)) {
+                $file::copyDirectory($themeAssetsPath, $publicAssetsPath);
+            }
         }
     } catch (\Throwable $e) {
         // Do not interrupt rendering; the page will show a friendly asset warning if umi.js is unavailable.
@@ -58,8 +68,16 @@
 
     $backgroundUrl = trim((string)($themeConfig['background_url'] ?? ''));
     $backgroundUrlJson = json_encode($backgroundUrl, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
-    $dashboardPath = base_path("storage/theme/{$themeName}/dashboard.blade.php");
-    $assetVersion = is_file($dashboardPath) ? substr(md5_file($dashboardPath), 0, 12) : $version;
+    $assetSources = [
+        base_path("storage/theme/{$themeName}/dashboard.blade.php"),
+        base_path("storage/theme/{$themeName}/assets/aurora-mist-light-plus.css"),
+        base_path("storage/theme/{$themeName}/assets/aurora-mist-light-plus.js"),
+    ];
+    $assetHashes = array_map(
+        fn ($path) => is_file($path) ? md5_file($path) : '',
+        $assetSources
+    );
+    $assetVersion = substr(md5(implode('|', $assetHashes) . '|' . $version), 0, 12);
 @endphp
 <!doctype html>
 <html lang="zh-CN" data-amg-theme="light-only-plus" data-amg-active="off" data-amg-scheme="default">
@@ -69,7 +87,10 @@
     <meta name="theme-color" content="{{ $accent }}" />
     <meta name="color-scheme" content="light dark" />
     <title>{{ $title }}</title>
-    <link rel="icon" href="/theme/{{ $themeName }}/assets/images/favicon.svg" type="image/svg+xml" />
+    @if(!empty($logo))
+    <link rel="icon" href="{{ $logo }}" />
+    <link rel="apple-touch-icon" href="{{ $logo }}" />
+    @endif
     <link rel="preload" href="/theme/{{ $themeName }}/assets/umi.js?v={{ $assetVersion }}" as="script" crossorigin />
     <link id="amg-light-css" rel="stylesheet" href="/theme/{{ $themeName }}/assets/aurora-mist-light-plus.css?v={{ $assetVersion }}" />
     <style>

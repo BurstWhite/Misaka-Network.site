@@ -18,8 +18,15 @@ COPY .docker /
 
 COPY . .
 
-RUN git config --global --add safe.directory /www && \
-    git submodule update --init --recursive --force
+ARG ADMIN_DIST_REPO=https://github.com/cedar2025/xboard-admin-dist.git
+ARG ADMIN_DIST_COMMIT=ef5f43da335092cbff8fdf0ad7ff9b4d92d7d0d7
+
+# The build context intentionally excludes .git. Fetch the pinned admin bundle
+# directly so the final image stays reproducible without retaining Git history.
+RUN rm -rf public/assets/admin && \
+    git clone --filter=blob:none --no-checkout "${ADMIN_DIST_REPO}" public/assets/admin && \
+    git -C public/assets/admin checkout "${ADMIN_DIST_COMMIT}" && \
+    rm -rf public/assets/admin/.git
 
 COPY .docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY .docker/caddy/Caddyfile /etc/caddy/Caddyfile

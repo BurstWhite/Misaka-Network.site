@@ -12,7 +12,7 @@ class KnowledgeTutorialSeeder extends Seeder
     public function run(): void
     {
         foreach ($this->tutorials() as $index => $tutorial) {
-            Knowledge::updateOrCreate(
+            Knowledge::firstOrCreate(
                 [
                     'language' => 'zh-CN',
                     'title' => $tutorial['title'],

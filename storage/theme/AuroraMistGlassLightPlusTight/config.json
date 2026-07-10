@@ -1,0 +1,74 @@
+{
+  "name": "AuroraMistGlassLightPlusTight",
+  "description": "基于 Xboard 的轻盈 Aurora 浅色主题",
+  "version": "1.0.0",
+  "images": "",
+  "configs": [
+    {
+      "label": "主题色",
+      "placeholder": "请选择主题颜色",
+      "field_name": "theme_color",
+      "field_type": "select",
+      "select_options": {
+        "default": "默认（绿色）",
+        "blue": "蓝色",
+        "black": "黑色",
+        "darkblue": "暗蓝色"
+      },
+      "default_value": "blue"
+    },
+    {
+      "label": "强调色",
+      "placeholder": "例如 #6D92E8",
+      "field_name": "accent_color",
+      "field_type": "input",
+      "default_value": "#6D92E8"
+    },
+    {
+      "label": "辅助色",
+      "placeholder": "例如 #72C7C0",
+      "field_name": "secondary_color",
+      "field_type": "input",
+      "default_value": "#72C7C0"
+    },
+    {
+      "label": "背景图片",
+      "placeholder": "请输入背景图片 URL",
+      "field_name": "background_url",
+      "field_type": "input",
+      "default_value": ""
+    },
+    {
+      "label": "视觉层次",
+      "placeholder": "请选择视觉层次",
+      "field_name": "visual_depth",
+      "field_type": "select",
+      "select_options": {
+        "calm": "平静",
+        "liquid": "流动",
+        "plus": "增强",
+        "bloom": "绽放"
+      },
+      "default_value": "plus"
+    },
+    {
+      "label": "圆角",
+      "placeholder": "请选择圆角大小",
+      "field_name": "radius_scale",
+      "field_type": "select",
+      "select_options": {
+        "balanced": "均衡",
+        "round": "圆润",
+        "soft": "柔和"
+      },
+      "default_value": "round"
+    },
+    {
+      "label": "自定义页脚 HTML",
+      "placeholder": "可加入客服等自定义代码",
+      "field_name": "custom_html",
+      "field_type": "textarea",
+      "default_value": ""
+    }
+  ]
+}
