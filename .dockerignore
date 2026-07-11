@@ -24,4 +24,8 @@ docker-compose.yml
 storage/laravels.conf
 storage/laravels.pid
 storage/laravels-timer-process.pid
-/frontend
+/frontend/node_modules
+/frontend/playwright-report
+/frontend/test-results
+/frontend/.preview
+/frontend/.tmp

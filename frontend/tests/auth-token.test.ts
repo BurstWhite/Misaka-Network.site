@@ -1,0 +1,3 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { readToken } from '@/stores/auth-token'
+describe('legacy auth migration', () => { beforeEach(() => localStorage.clear()); it('migrates Vue_Naive token envelopes', () => { localStorage.setItem('Vue_Naive_access_token', JSON.stringify({ value: 'legacy-token', expire: Date.now()+10000 })); expect(readToken()).toBe('legacy-token'); expect(localStorage.getItem('misaka.access_token')).toBe('legacy-token') }); it('ignores expired envelopes', () => { localStorage.setItem('Vue_Naive_access_token', JSON.stringify({ value: 'old', expire: Date.now()-1 })); expect(readToken()).toBe('') }) })

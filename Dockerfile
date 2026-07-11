@@ -1,3 +1,11 @@
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /src/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY frontend/ ./
+RUN npm run build
+
 FROM phpswoole/swoole:php8.2-alpine
 
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
@@ -17,6 +25,8 @@ WORKDIR /www
 COPY .docker /
 
 COPY . .
+
+COPY --from=frontend-builder /src/theme/Misaka/assets /www/theme/Misaka/assets
 
 ARG ADMIN_DIST_REPO=https://github.com/cedar2025/xboard-admin-dist.git
 ARG ADMIN_DIST_COMMIT=ef5f43da335092cbff8fdf0ad7ff9b4d92d7d0d7

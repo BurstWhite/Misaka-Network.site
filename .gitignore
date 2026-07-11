@@ -26,7 +26,12 @@ storage/laravels.pid
 storage/update_pending
 storage/laravels-timer-process.pid
 cli-php.ini
-frontend
+/frontend/node_modules
+/frontend/dist
+/frontend/playwright-report
+/frontend/test-results
+/frontend/.preview
+/frontend/.tmp
 docker-compose.yaml
 bun.lockb
 compose.yaml

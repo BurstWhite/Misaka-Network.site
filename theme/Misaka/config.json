@@ -1,0 +1,11 @@
+{
+  "name": "Misaka",
+  "description": "Misaka Network 可维护的 Vue 3 用户前端",
+  "version": "1.0.0",
+  "images": "",
+  "configs": [
+    { "label": "主题色", "placeholder": "输入十六进制颜色", "field_name": "primary_color", "field_type": "input", "default_value": "#3155ee" },
+    { "label": "背景图片", "placeholder": "可选背景图片 URL", "field_name": "background_url", "field_type": "input", "default_value": "" },
+    { "label": "自定义页脚 HTML", "placeholder": "客服脚本等自定义 HTML", "field_name": "custom_html", "field_type": "textarea", "default_value": "" }
+  ]
+}
