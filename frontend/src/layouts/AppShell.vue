@@ -5,6 +5,8 @@ import { useI18n } from 'vue-i18n'
 import Icon from '@/shared/Icon.vue'
 import DropdownMenu from '@/shared/DropdownMenu.vue'
 import { runtimeConfig } from '@/app/config'
+import { setCurrencySymbol } from '@/app/config'
+import { userApi } from '@/api/services'
 import { useThemeStore, type ThemeMode } from '@/stores/theme'
 import { useLocaleStore } from '@/stores/locale'
 import { useAuthStore } from '@/stores/auth'
@@ -25,7 +27,10 @@ const themeOptions = computed(() => [
   { value: 'system', label: t('theme.system'), icon: 'monitor' }, { value: 'light', label: t('theme.light'), icon: 'sun' }, { value: 'dark', label: t('theme.dark'), icon: 'moon' },
 ])
 function logOut() { auth.logout(); router.push('/login') }
-onMounted(() => { theme.start(); auth.loadUser() })
+onMounted(async () => {
+  theme.start(); auth.loadUser()
+  try { setCurrencySymbol((await userApi.config()).currency_symbol) } catch { /* optional user settings */ }
+})
 </script>
 
 <template>

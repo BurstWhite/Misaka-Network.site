@@ -13,7 +13,7 @@
       document.documentElement.dataset.theme = dark ? 'dark' : 'light';
       document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
       window.__MISAKA_CONFIG__ = {!! $runtime_config_json !!};
-      document.documentElement.style.setProperty('--accent', window.__MISAKA_CONFIG__.theme.primaryColor);
+      document.documentElement.style.setProperty('--accent', window.__MISAKA_CONFIG__.theme.primaryColor || '#3155ee');
     })();
   </script>
   <link rel="stylesheet" href="/theme/{{ $theme }}/assets/app.css?v={{ $version }}" />

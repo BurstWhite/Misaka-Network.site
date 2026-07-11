@@ -99,7 +99,8 @@ Route::get('/', function (Request $request) {
                 'primaryColor' => $themeConfig['primary_color'] ?? '#3155ee',
                 'backgroundUrl' => $themeConfig['background_url'] ?? '',
             ],
-            'features' => [],
+            // Keep the runtime contract object-shaped; the frontend treats this as a feature map.
+            'features' => new \stdClass(),
         ];
 
         $renderParams = [

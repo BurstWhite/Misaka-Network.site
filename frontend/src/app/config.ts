@@ -9,3 +9,8 @@ export const runtimeConfig: MisakaRuntimeConfig = window.__MISAKA_CONFIG__ ?? {
   theme: { primaryColor: '#3155ee' },
   features: {},
 }
+
+export let currencySymbol = '¥'
+export function setCurrencySymbol(value: unknown): void {
+  if (typeof value === 'string' && value.trim()) currencySymbol = value.trim()
+}

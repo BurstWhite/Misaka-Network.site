@@ -11,6 +11,7 @@ export const authApi = {
 export const userApi = {
   info: () => getData<any>('/user/info'),
   subscribe: () => getData<any>('/user/getSubscribe'),
+  resetSecurity: () => getData<string>('/user/resetSecurity'),
   stats: () => getData<any>('/user/getStat'),
   config: () => getData<any>('/user/comm/config'),
   update: (payload: object) => postData<any>('/user/update', payload),
@@ -34,7 +35,7 @@ export const commerceApi = {
 
 export const serviceApi = {
   notices: () => getData<any[]>('/user/notice/fetch'),
-  tickets: () => getData<any>('/user/ticket/fetch'),
+  tickets: (params?: object) => getData<any>('/user/ticket/fetch', params),
   createTicket: (payload: object) => postData<any>('/user/ticket/save', payload),
   replyTicket: (payload: object) => postData<any>('/user/ticket/reply', payload),
   closeTicket: (id: number) => postData<any>('/user/ticket/close', { id }),
@@ -46,5 +47,6 @@ export const serviceApi = {
   inviteDetails: () => getData<any>('/user/invite/details'),
   createInvite: () => getData<any>('/user/invite/save'),
   giftHistory: () => getData<any>('/user/gift-card/history'),
+  giftCheck: (code: string) => postData<any>('/user/gift-card/check', { code }),
   redeemGift: (code: string) => postData<any>('/user/gift-card/redeem', { code }),
 }

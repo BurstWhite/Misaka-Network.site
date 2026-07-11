@@ -3,3 +3,41 @@
 .panel {
   min-width: 0;
 }
+
+.list-panel article {
+  cursor: pointer;
+}
+
+.ticket-messages {
+  display: grid;
+  gap: 10px;
+  max-height: 280px;
+  overflow: auto;
+  margin-bottom: 14px;
+}
+
+.ticket-messages p {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--surface-soft);
+  border-radius: 8px;
+}
+
+.ticket-messages p.is-me {
+  background: #edf1ff;
+}
+
+.ticket-messages small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+}
+
+.captcha-widget {
+  margin: 16px 0;
+  min-height: 78px;
+}
+
+.knowledge-body {
+  line-height: 1.7;
+}

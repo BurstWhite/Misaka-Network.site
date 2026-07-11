@@ -1,6 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { readToken } from '@/stores/auth-token'
-import { runtimeConfig } from './config'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -31,7 +30,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
-  const loggedIn = runtimeConfig.features.demo || Boolean(readToken())
+  const loggedIn = Boolean(readToken())
   if (!to.meta.public && !loggedIn) return { path: '/login', query: { redirect: to.fullPath } }
   if (to.meta.public && loggedIn && to.path === '/login') return '/dashboard'
 })
