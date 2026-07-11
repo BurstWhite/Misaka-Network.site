@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $password_salt 加密盐
  * @property string $token 邀请码
  * @property string $uuid
+ * @property string|null $remarks 管理员备注
  * @property int|null $invite_user_id 邀请人
  * @property int|null $plan_id 订阅ID
  * @property int|null $group_id 权限组ID
