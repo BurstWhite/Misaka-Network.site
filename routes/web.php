@@ -86,22 +86,45 @@ Route::get('/', function (Request $request) {
             Log::info('Theme initialized in public directory', ['theme' => $theme]);
         }
 
+        $themeConfig = $themeService->getConfig($theme) ?? [];
+        $runtimeConfig = [
+            'apiBase' => '/api/v1',
+            'assetsBase' => "/theme/{$theme}/assets",
+            'appName' => admin_setting('app_name', 'Xboard'),
+            'description' => admin_setting('app_description', 'Xboard is best'),
+            'logo' => admin_setting('logo'),
+            'version' => app(UpdateService::class)->getCurrentVersion(),
+            'supportedLocales' => ['zh-CN', 'zh-TW', 'en-US', 'ja-JP', 'vi-VN', 'ko-KR', 'ru-RU', 'fa-IR'],
+            'theme' => [
+                'primaryColor' => $themeConfig['primary_color'] ?? '#3155ee',
+                'backgroundUrl' => $themeConfig['background_url'] ?? '',
+            ],
+            'features' => [],
+        ];
+
         $renderParams = [
             'title' => admin_setting('app_name', 'Xboard'),
             'theme' => $theme,
-            'version' => app(UpdateService::class)->getCurrentVersion(),
+            'version' => $runtimeConfig['version'],
             'description' => admin_setting('app_description', 'Xboard is best'),
             'logo' => admin_setting('logo'),
-            'theme_config' => $themeService->getConfig($theme)
+            'theme_config' => $themeConfig,
+            // Encode outside the Blade directive parser. This also keeps closing
+            // script tags and quotes from custom settings inert inside JavaScript.
+            'runtime_config_json' => json_encode(
+                $runtimeConfig,
+                JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE
+            ),
         ];
         $html = view('theme::' . $theme . '.dashboard', $renderParams)->render();
         return response($html)
             ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
             ->header('Pragma', 'no-cache')
             ->header('Expires', '0');
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
         Log::error('Theme rendering failed', [
             'theme' => $theme,
+            'exception' => get_class($e),
             'error' => $e->getMessage()
         ]);
         abort(500, '主题加载失败');

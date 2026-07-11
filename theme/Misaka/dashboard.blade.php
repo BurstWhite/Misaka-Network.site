@@ -12,17 +12,7 @@
       document.documentElement.classList.toggle('dark', dark);
       document.documentElement.dataset.theme = dark ? 'dark' : 'light';
       document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
-      window.__MISAKA_CONFIG__ = @json([
-        'apiBase' => '/api/v1',
-        'assetsBase' => "/theme/{$theme}/assets",
-        'appName' => $title,
-        'description' => $description,
-        'logo' => $logo,
-        'version' => $version,
-        'supportedLocales' => ['zh-CN','zh-TW','en-US','ja-JP','vi-VN','ko-KR','ru-RU','fa-IR'],
-        'theme' => ['primaryColor' => $theme_config['primary_color'] ?? '#3155ee', 'backgroundUrl' => $theme_config['background_url'] ?? ''],
-        'features' => [],
-      ]);
+      window.__MISAKA_CONFIG__ = {!! $runtime_config_json !!};
       document.documentElement.style.setProperty('--accent', window.__MISAKA_CONFIG__.theme.primaryColor);
     })();
   </script>

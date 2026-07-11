@@ -286,7 +286,15 @@ class ThemeService
             $this->initConfig($theme);
             $config = admin_setting(self::SETTING_PREFIX . $theme);
         }
-        return $config;
+
+        // Older installations may still have theme settings cached as their
+        // serialized JSON string. Normalize that value before Blade accesses it.
+        if (is_string($config)) {
+            $decoded = json_decode($config, true);
+            $config = json_last_error() === JSON_ERROR_NONE ? $decoded : [];
+        }
+
+        return is_array($config) ? $config : [];
     }
 
     /**

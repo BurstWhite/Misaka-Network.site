@@ -25,4 +25,13 @@ class ThemeServiceTest extends TestCase
         $this->assertFileExists($path);
         $this->assertStringEndsWith('theme/Misaka/dashboard.blade.php', $path);
     }
+
+    public function test_misaka_runtime_config_avoids_complex_blade_json_directive(): void
+    {
+        $path = app(ThemeService::class)->getThemeViewPath('Misaka');
+        $view = file_get_contents($path);
+
+        $this->assertStringContainsString('{!! $runtime_config_json !!}', $view);
+        $this->assertStringNotContainsString('@json(', $view);
+    }
 }
