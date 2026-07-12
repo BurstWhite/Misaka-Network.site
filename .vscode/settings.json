@@ -1,0 +1,8 @@
+{
+  "php.validate.executablePath": "C:/Users/SkyFrost/Documents/GitHub/tools/php-8.2/php.exe",
+  "intelephense.environment.phpVersion": "8.2.0",
+  "files.associations": {
+    ".env*": "dotenv"
+  },
+  "editor.formatOnSave": false
+}

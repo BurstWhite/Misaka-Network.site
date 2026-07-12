@@ -1,17 +1,17 @@
 {
-  "_Icon.vue_vue_type_script_setup_true_lang-B6aGjkvg.js": {
-    "file": "chunks/Icon.vue_vue_type_script_setup_true_lang-B6aGjkvg.js",
+  "_Icon.vue_vue_type_script_setup_true_lang-DrsBtDqQ.js": {
+    "file": "chunks/Icon.vue_vue_type_script_setup_true_lang-DrsBtDqQ.js",
     "name": "Icon.vue_vue_type_script_setup_true_lang",
     "imports": [
       "_vendor-CiG7qxYO.js"
     ]
   },
-  "_auth-CVlEzwaH.js": {
-    "file": "chunks/auth-CVlEzwaH.js",
+  "_auth-_Dy83Jh0.js": {
+    "file": "chunks/auth-_Dy83Jh0.js",
     "name": "auth",
     "imports": [
       "_vendor-CiG7qxYO.js",
-      "_services-D04-iUwj.js",
+      "_services-BrTIi3Hu.js",
       "src/main.ts"
     ]
   },
@@ -34,8 +34,8 @@
       "_vendor-CiG7qxYO.js"
     ]
   },
-  "_services-D04-iUwj.js": {
-    "file": "chunks/services-D04-iUwj.js",
+  "_services-BrTIi3Hu.js": {
+    "file": "chunks/services-BrTIi3Hu.js",
     "name": "services",
     "imports": [
       "_http-Dq7h7Pqt.js",
@@ -47,7 +47,7 @@
     "name": "vendor"
   },
   "src/features/auth/AuthView.vue": {
-    "file": "chunks/AuthView-BWGZOqZ2.js",
+    "file": "chunks/AuthView-BlNqbdKF.js",
     "name": "AuthView",
     "src": "src/features/auth/AuthView.vue",
     "isDynamicEntry": true,
@@ -55,48 +55,49 @@
       "_vendor-CiG7qxYO.js",
       "_i18n-CmyP2atl.js",
       "src/main.ts",
-      "_auth-CVlEzwaH.js",
-      "_services-D04-iUwj.js",
+      "_auth-_Dy83Jh0.js",
+      "_services-BrTIi3Hu.js",
       "_http-Dq7h7Pqt.js"
     ]
   },
   "src/features/dashboard/DashboardView.vue": {
-    "file": "chunks/DashboardView-D3clgtAi.js",
+    "file": "chunks/DashboardView-CG43GqFJ.js",
     "name": "DashboardView",
     "src": "src/features/dashboard/DashboardView.vue",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-CiG7qxYO.js",
       "_i18n-CmyP2atl.js",
-      "_services-D04-iUwj.js",
+      "_services-BrTIi3Hu.js",
       "_format-B6DdiMw-.js",
-      "_Icon.vue_vue_type_script_setup_true_lang-B6aGjkvg.js",
+      "_Icon.vue_vue_type_script_setup_true_lang-DrsBtDqQ.js",
       "_http-Dq7h7Pqt.js",
       "src/main.ts"
     ]
   },
   "src/features/data/DataView.vue": {
-    "file": "chunks/DataView-B14t9UYu.js",
+    "file": "chunks/DataView-B9SqPZB7.js",
     "name": "DataView",
     "src": "src/features/data/DataView.vue",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-CiG7qxYO.js",
-      "_services-D04-iUwj.js",
+      "_services-BrTIi3Hu.js",
       "_format-B6DdiMw-.js",
+      "_Icon.vue_vue_type_script_setup_true_lang-DrsBtDqQ.js",
       "_http-Dq7h7Pqt.js",
       "src/main.ts",
       "_i18n-CmyP2atl.js"
     ]
   },
   "src/features/orders/OrderDetailView.vue": {
-    "file": "chunks/OrderDetailView-fCNYFcGI.js",
+    "file": "chunks/OrderDetailView-GaCBF_UD.js",
     "name": "OrderDetailView",
     "src": "src/features/orders/OrderDetailView.vue",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-CiG7qxYO.js",
-      "_services-D04-iUwj.js",
+      "_services-BrTIi3Hu.js",
       "_format-B6DdiMw-.js",
       "_http-Dq7h7Pqt.js",
       "src/main.ts",
@@ -104,12 +105,12 @@
     ]
   },
   "src/features/orders/OrdersView.vue": {
-    "file": "chunks/OrdersView-B_hwC-q2.js",
+    "file": "chunks/OrdersView-DTo1mfnT.js",
     "name": "OrdersView",
     "src": "src/features/orders/OrdersView.vue",
     "isDynamicEntry": true,
     "imports": [
-      "_services-D04-iUwj.js",
+      "_services-BrTIi3Hu.js",
       "_format-B6DdiMw-.js",
       "_vendor-CiG7qxYO.js",
       "_http-Dq7h7Pqt.js",
@@ -118,13 +119,13 @@
     ]
   },
   "src/features/plans/PlansView.vue": {
-    "file": "chunks/PlansView-CjQqoIi5.js",
+    "file": "chunks/PlansView-C6GyZIJT.js",
     "name": "PlansView",
     "src": "src/features/plans/PlansView.vue",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-CiG7qxYO.js",
-      "_services-D04-iUwj.js",
+      "_services-BrTIi3Hu.js",
       "_format-B6DdiMw-.js",
       "_http-Dq7h7Pqt.js",
       "src/main.ts",
@@ -132,13 +133,13 @@
     ]
   },
   "src/features/profile/ProfileView.vue": {
-    "file": "chunks/ProfileView-CMOvd0PO.js",
+    "file": "chunks/ProfileView-Dy2MD0Rt.js",
     "name": "ProfileView",
     "src": "src/features/profile/ProfileView.vue",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-CiG7qxYO.js",
-      "_services-D04-iUwj.js",
+      "_services-BrTIi3Hu.js",
       "_format-B6DdiMw-.js",
       "_http-Dq7h7Pqt.js",
       "src/main.ts",
@@ -146,13 +147,14 @@
     ]
   },
   "src/features/subscription/SubscriptionView.vue": {
-    "file": "chunks/SubscriptionView-DSM8hfL8.js",
+    "file": "chunks/SubscriptionView-DW6k1P2d.js",
     "name": "SubscriptionView",
     "src": "src/features/subscription/SubscriptionView.vue",
     "isDynamicEntry": true,
     "imports": [
-      "_services-D04-iUwj.js",
+      "_services-BrTIi3Hu.js",
       "_format-B6DdiMw-.js",
+      "_Icon.vue_vue_type_script_setup_true_lang-DrsBtDqQ.js",
       "_vendor-CiG7qxYO.js",
       "_http-Dq7h7Pqt.js",
       "src/main.ts",
@@ -160,13 +162,13 @@
     ]
   },
   "src/features/tickets/TicketsView.vue": {
-    "file": "chunks/TicketsView-C6FvQTma.js",
+    "file": "chunks/TicketsView-D6WOBRaq.js",
     "name": "TicketsView",
     "src": "src/features/tickets/TicketsView.vue",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-CiG7qxYO.js",
-      "_services-D04-iUwj.js",
+      "_services-BrTIi3Hu.js",
       "_format-B6DdiMw-.js",
       "_http-Dq7h7Pqt.js",
       "src/main.ts",
@@ -174,17 +176,17 @@
     ]
   },
   "src/layouts/AppShell.vue": {
-    "file": "chunks/AppShell-C-1A1Ev-.js",
+    "file": "chunks/AppShell-f9W2riJ3.js",
     "name": "AppShell",
     "src": "src/layouts/AppShell.vue",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-CiG7qxYO.js",
       "_i18n-CmyP2atl.js",
-      "_Icon.vue_vue_type_script_setup_true_lang-B6aGjkvg.js",
+      "_Icon.vue_vue_type_script_setup_true_lang-DrsBtDqQ.js",
       "src/main.ts",
-      "_services-D04-iUwj.js",
-      "_auth-CVlEzwaH.js",
+      "_services-BrTIi3Hu.js",
+      "_auth-_Dy83Jh0.js",
       "_http-Dq7h7Pqt.js"
     ]
   },
