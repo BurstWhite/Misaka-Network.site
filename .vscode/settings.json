@@ -1,0 +1,7 @@
+{
+  "intelephense.environment.phpVersion": "8.2.0",
+  "files.associations": {
+    ".env*": "dotenv"
+  },
+  "editor.formatOnSave": false
+}

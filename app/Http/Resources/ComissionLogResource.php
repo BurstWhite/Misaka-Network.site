@@ -40,9 +40,12 @@ class ComissionLogResource extends JsonResource
 
     private function maskEmail(?string $email): ?string
     {
-        if (!$email || !str_contains($email, '@')) return null;
+        if (!$email || !str_contains($email, '@')) {
+            return null;
+        }
+
         [$name, $domain] = explode('@', $email, 2);
-        $visible = substr($name, 0, 6);
-        return $visible . str_repeat('*', max(2, strlen($name) - strlen($visible))) . '@' . $domain;
+
+        return substr($name, 0, 1) . str_repeat('*', max(2, strlen($name) - 1)) . '@' . $domain;
     }
 }

@@ -289,7 +289,7 @@ function renderRichText(value: unknown, title = ''): string {
       <div v-if="selectedServer" class="dashboard-node-body">
         <div class="dashboard-node-list">
           <button v-for="server in rows" :key="server.id" type="button" :class="['dashboard-node-item', { active: String(server.id) === String(selectedServer.id) }]" @click="selectedServerId = server.id">
-            <span class="dashboard-node-code">{{ serverCode(server) }}</span><span><strong>{{ server.name }}</strong><small>{{ server.type || '-' }} · {{ serverStatus(server).label }}</small></span><em :class="['node-status', serverStatus(server).key]">{{ Number(server.rate || 1).toFixed(1) }}×</em>
+            <span class="dashboard-node-code">{{ serverCode(server) }}</span><span><strong>{{ server.name }}</strong><small>{{ server.type || '-' }} · {{ serverStatus(server).label }}</small></span><em :class="serverStatus(server).key">{{ Number(server.rate || 1).toFixed(1) }}×</em>
           </button>
         </div>
         <div class="dashboard-node-detail">
