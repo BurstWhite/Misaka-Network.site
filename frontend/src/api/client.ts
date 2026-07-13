@@ -46,3 +46,8 @@ export async function postData<T>(url: string, data?: object, signal?: AbortSign
   const response = await api.post<ApiEnvelope<T>>(url, data, { signal })
   return responseData(response.data)
 }
+
+export async function postRawData<T>(url: string, data?: object, signal?: AbortSignal): Promise<T> {
+  const response = await api.post<T>(url, data, { signal })
+  return response.data
+}

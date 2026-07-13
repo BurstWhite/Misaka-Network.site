@@ -34,6 +34,23 @@ class KnowledgeController extends Controller
             : $this->fetchList($request);
     }
 
+    public function getCategory(Request $request)
+    {
+        $request->validate([
+            'language' => 'nullable|sometimes|string|max:10',
+        ]);
+
+        $categories = $this->buildKnowledgeQuery(['category'])
+            ->where('language', $request->input('language'))
+            ->orderBy('sort', 'ASC')
+            ->pluck('category')
+            ->filter()
+            ->unique()
+            ->values();
+
+        return $this->success($categories);
+    }
+
     private function fetchSingle(Request $request)
     {
         $knowledge = $this->buildKnowledgeQuery()

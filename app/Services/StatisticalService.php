@@ -25,8 +25,11 @@ class StatisticalService
     public function __construct()
     {
         ini_set('memory_limit', -1);
-        $this->redis = Redis::connection();
+    }
 
+    protected function redis()
+    {
+        return $this->redis ??= Redis::connection();
     }
 
     public function setStartAt($timestamp)
@@ -92,8 +95,8 @@ class StatisticalService
     {
         $u_menber = "{$serverType}_{$serverId}_u"; //储存上传流量的集合成员
         $d_menber = "{$serverType}_{$serverId}_d"; //储存下载流量的集合成员
-        $this->redis->zincrby($this->statServerKey, $u, $u_menber);
-        $this->redis->zincrby($this->statServerKey, $d, $d_menber);
+        $this->redis()->zincrby($this->statServerKey, $u, $u_menber);
+        $this->redis()->zincrby($this->statServerKey, $d, $d_menber);
     }
 
     /**
@@ -103,8 +106,8 @@ class StatisticalService
     {
         $u_menber = "{$rate}_{$userId}_u"; //储存上传流量的集合成员
         $d_menber = "{$rate}_{$userId}_d"; //储存下载流量的集合成员
-        $this->redis->zincrby($this->statUserKey, $u, $u_menber);
-        $this->redis->zincrby($this->statUserKey, $d, $d_menber);
+        $this->redis()->zincrby($this->statUserKey, $u, $u_menber);
+        $this->redis()->zincrby($this->statUserKey, $d, $d_menber);
     }
 
     /**
@@ -114,7 +117,7 @@ class StatisticalService
     {
 
         $stats = [];
-        $statsUser = $this->redis->zrange($this->statUserKey, 0, -1, true);
+        $statsUser = $this->redis()->zrange($this->statUserKey, 0, -1, true);
         foreach ($statsUser as $member => $value) {
             list($rate, $uid, $type) = explode('_', $member);
             if (intval($uid) !== intval($userId))
@@ -138,7 +141,7 @@ class StatisticalService
     public function getStatUser()
     {
         $stats = [];
-        $statsUser = $this->redis->zrange($this->statUserKey, 0, -1, true);
+        $statsUser = $this->redis()->zrange($this->statUserKey, 0, -1, true);
         foreach ($statsUser as $member => $value) {
             list($rate, $uid, $type) = explode('_', $member);
             $key = "{$rate}_{$uid}";
@@ -164,7 +167,7 @@ class StatisticalService
     {
         /** @var array<string, array{server_id: int, server_type: string, u: float, d: float}> $stats */
         $stats = [];
-        $statsServer = $this->redis->zrange($this->statServerKey, 0, -1, true);
+        $statsServer = $this->redis()->zrange($this->statServerKey, 0, -1, true);
 
         foreach ($statsServer as $member => $value) {
             $parts = explode('_', $member);
@@ -197,7 +200,7 @@ class StatisticalService
      */
     public function clearStatUser()
     {
-        $this->redis->del($this->statUserKey);
+        $this->redis()->del($this->statUserKey);
     }
 
     /**
@@ -205,7 +208,7 @@ class StatisticalService
      */
     public function clearStatServer()
     {
-        $this->redis->del($this->statServerKey);
+        $this->redis()->del($this->statServerKey);
     }
 
     public function getStatRecord($type)

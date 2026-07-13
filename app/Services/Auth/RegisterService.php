@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Cache;
 
 class RegisterService
 {
+    private ?string $inviteCode = null;
     /**
      * 验证用户注册请求
      *
@@ -126,6 +127,7 @@ class RegisterService
             $inviteCodeModel->save();
         }
 
+        $this->inviteCode = $inviteCodeModel->code;
         return $inviteCodeModel->user_id;
     }
 
@@ -163,6 +165,7 @@ class RegisterService
             'email' => $email,
             'password' => $password,
             'invite_user_id' => $inviteUserId,
+            'invite_code' => $this->inviteCode,
         ]);
 
         // 保存用户

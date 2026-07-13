@@ -35,6 +35,7 @@ class InviteController extends Controller
             ->orderBy('created_at', 'DESC');
         $total = $builder->count();
         $details = $builder->forPage($current, $pageSize)
+            ->with('invitedUser:id,email,created_at,invite_code')
             ->get();
         return response([
             'data' => ComissionLogResource::collection($details),

@@ -18,9 +18,9 @@ const locale = useLocaleStore()
 const auth = useAuthStore()
 const mobileOpen = ref(false)
 const nav = computed(() => [
-  ['dashboard', 'dashboard', '/dashboard'], ['card', 'subscription', '/subscription'], ['cart', 'plans', '/plans'],
+  ['dashboard', 'dashboard', '/dashboard'], ['book', 'docs', '/knowledge'], ['card', 'subscription', '/subscription'], ['cart', 'plans', '/plans'],
   ['receipt', 'orders', '/orders'], ['users', 'invite', '/invite'], ['ticket', 'tickets', '/tickets'],
-  ['chart', 'traffic', '/traffic'], ['server', 'servers', '/servers'], ['book', 'docs', '/knowledge'],
+  ['chart', 'traffic', '/traffic'], ['server', 'servers', '/servers'],
   ['gift', 'gifts', '/gifts'], ['user', 'profile', '/profile'],
 ])
 const themeOptions = computed(() => [

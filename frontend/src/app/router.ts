@@ -4,12 +4,12 @@ import { readToken } from '@/stores/auth-token'
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
+    { path: '/', component: () => import('@/features/landing/LandingView.vue'), meta: { public: true } },
     { path: '/login', component: () => import('@/features/auth/AuthView.vue'), meta: { public: true, mode: 'login' } },
     { path: '/register', component: () => import('@/features/auth/AuthView.vue'), meta: { public: true, mode: 'register' } },
     { path: '/forgetpassword', component: () => import('@/features/auth/AuthView.vue'), meta: { public: true, mode: 'forget' } },
     {
       path: '/', component: () => import('@/layouts/AppShell.vue'), children: [
-        { path: '', redirect: '/dashboard' },
         { path: 'dashboard', component: () => import('@/features/dashboard/DashboardView.vue') },
         { path: 'subscription', component: () => import('@/features/subscription/SubscriptionView.vue') },
         { path: 'plans', component: () => import('@/features/plans/PlansView.vue') },

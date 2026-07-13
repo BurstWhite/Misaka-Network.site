@@ -1,4 +1,4 @@
-import { getData, postData } from './client'
+import { getData, postData, postRawData } from './client'
 
 export const authApi = {
   config: () => getData<any>('/guest/comm/config'),
@@ -28,7 +28,7 @@ export const commerceApi = {
   cancelOrder: (tradeNo: string) => postData<any>('/user/order/cancel', { trade_no: tradeNo }),
   manualSubmit: (tradeNo: string) => postData<any>('/user/order/manual-submit', { trade_no: tradeNo }),
   paymentMethods: () => getData<any[]>('/user/order/getPaymentMethod'),
-  checkout: (payload: object) => postData<any>('/user/order/checkout', payload),
+  checkout: (payload: object) => postRawData<any>('/user/order/checkout', payload),
   checkPayment: (tradeNo: string) => getData<any>('/user/order/check', { trade_no: tradeNo }),
   coupon: (payload: object) => postData<any>('/user/coupon/check', payload),
 }
@@ -40,11 +40,11 @@ export const serviceApi = {
   replyTicket: (payload: object) => postData<any>('/user/ticket/reply', payload),
   closeTicket: (id: number) => postData<any>('/user/ticket/close', { id }),
   servers: () => getData<any[]>('/user/server/fetch'),
-  knowledge: () => getData<any[]>('/user/knowledge/fetch'),
-  knowledgeCategories: () => getData<any[]>('/user/knowledge/getCategory'),
+  knowledge: () => getData<any[]>('/user/knowledge/fetch', { language: localStorage.getItem('misaka.locale') || 'zh-CN' }),
+  knowledgeCategories: () => getData<any[]>('/user/knowledge/getCategory', { language: localStorage.getItem('misaka.locale') || 'zh-CN' }),
   traffic: () => getData<any>('/user/stat/getTrafficLog'),
   invites: () => getData<any>('/user/invite/fetch'),
-  inviteDetails: () => getData<any>('/user/invite/details'),
+  inviteDetails: (params?: object) => getData<any>('/user/invite/details', params),
   createInvite: () => getData<any>('/user/invite/save'),
   giftHistory: () => getData<any>('/user/gift-card/history'),
   giftCheck: (code: string) => postData<any>('/user/gift-card/check', { code }),

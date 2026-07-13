@@ -195,6 +195,7 @@ class UserService
     {
         $optionalFields = [
             'invite_user_id',
+            'invite_code',
             'telegram_id',
             'group_id',
             'speed_limit',
