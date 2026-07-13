@@ -28,8 +28,8 @@ class InviteController extends Controller
 
     public function details(Request $request)
     {
-        $current = $request->input('current') ? $request->input('current') : 1;
-        $pageSize = $request->input('page_size') >= 10 ? $request->input('page_size') : 10;
+        $current = max(1, $request->integer('current', 1));
+        $pageSize = min(100, max(10, $request->integer('page_size', 10)));
         $builder = CommissionLog::where('invite_user_id', $request->user()->id)
             ->where('get_amount', '>', 0)
             ->orderBy('created_at', 'DESC');

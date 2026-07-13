@@ -1,0 +1,33 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Misaka: Start",
+      "type": "shell",
+      "command": "docker compose -f compose.sample.yaml up -d",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Misaka: Stop",
+      "type": "shell",
+      "command": "docker compose -f compose.sample.yaml down",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Misaka: Logs",
+      "type": "shell",
+      "command": "docker compose -f compose.sample.yaml logs -f",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Misaka: Tests",
+      "type": "shell",
+      "command": "docker compose -f compose.sample.yaml exec -T xboard php artisan test",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    }
+  ]
+}

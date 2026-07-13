@@ -38,7 +38,10 @@ compose.yaml
 compose.host.yaml
 compose.split.yaml
 .scribe
-/.vscode/
+/.phpunit.cache/
+/.vscode/*
+!/.vscode/extensions.json
+!/.vscode/settings.json
+!/.vscode/tasks.json
 /database/seeders/LocalDemoSeeder.php
 /frontend/pnpm-workspace.yaml
-/frontend/tests/e2e/theme.spec.ts

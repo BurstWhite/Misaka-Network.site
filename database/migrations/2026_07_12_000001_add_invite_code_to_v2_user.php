@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasColumn('v2_user', 'invite_code')) {
+        if (Schema::hasTable('v2_user') && !Schema::hasColumn('v2_user', 'invite_code')) {
             Schema::table('v2_user', function (Blueprint $table) {
                 $table->string('invite_code', 32)->nullable()->index();
             });
@@ -17,10 +17,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (Schema::hasColumn('v2_user', 'invite_code')) {
-            Schema::table('v2_user', function (Blueprint $table) {
-                $table->dropColumn('invite_code');
-            });
-        }
+        // Intentionally left blank: the column may predate this compatibility migration.
     }
 };
