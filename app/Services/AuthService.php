@@ -49,6 +49,15 @@ class AuthService
             ])->save();
         }
 
+        if ($currentToken instanceof PersonalAccessToken) {
+            $this->user->tokens()
+                ->where('id', '!=', $currentToken->id)
+                ->where(function ($query): void {
+                    $query->whereNull('ip_address')->orWhereNull('user_agent');
+                })
+                ->delete();
+        }
+
         return $this->user->tokens()->latest('last_used_at')->latest('created_at')->get()->map(function (PersonalAccessToken $token) use ($currentToken): array {
             return [
                 'id' => $token->id,

@@ -30,10 +30,13 @@ class AuthServiceTest extends TestCase
 
         (new AuthService($user))->generateAuthData($request);
         $token = $user->tokens()->firstOrFail();
+        $legacyToken = $user->createToken('legacy-session')->accessToken;
         $user->withAccessToken($token);
         $sessions = (new AuthService($user))->getSessions($request);
 
         $this->assertSame('203.0.113.42', $token->ip_address);
+        $this->assertFalse($user->tokens()->whereKey($legacyToken->id)->exists());
+        $this->assertCount(1, $sessions);
         $this->assertSame('Safari · macOS', $sessions[0]['device']);
         $this->assertSame('203.0.113.42', $sessions[0]['ip']);
         $this->assertTrue($sessions[0]['current']);

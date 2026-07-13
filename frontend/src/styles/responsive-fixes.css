@@ -74,6 +74,9 @@ a,
   text-align: center;
 }
 
+.traffic-hit-area { fill: transparent; stroke: none; outline: none; }
+.traffic-point:focus-within .traffic-node { stroke: var(--tooltip-accent); }
+
 .traffic-axis {
   display: grid;
   gap: 2px;
@@ -376,6 +379,11 @@ a,
 }
 
 .notice-modal-backdrop {
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  place-items: center;
+  padding: 20px;
   animation: modal-fade-in .2s ease both;
 }
 
@@ -384,7 +392,9 @@ a,
   max-height: calc(100dvh - 40px);
   display: flex;
   flex-direction: column;
+  margin: 0;
   overflow: hidden;
+  outline: 0;
   animation: modal-rise-in .24s cubic-bezier(.2, .8, .2, 1) both;
 }
 .notice-modal > header, .notice-modal > footer, .notice-modal-tags { flex: none; }
@@ -400,9 +410,12 @@ a,
 }
 
 .notice-modal-body {
+  flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: 11px;

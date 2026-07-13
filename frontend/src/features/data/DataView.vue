@@ -276,16 +276,14 @@ function renderRichText(value: unknown, title = ''): string {
     <section v-if="kind === 'traffic'" class="panel traffic-panel">
       <header><div><h2>每日流量趋势</h2><p>最近 14 天，按日汇总上传、下载与总用量</p></div><span class="traffic-total"><Icon name="chart" :size="17" /> {{ bytes(trafficTotal) }}</span></header>
       <div v-if="trafficHasData" class="traffic-chart-wrap">
-        <svg class="traffic-chart" viewBox="0 0 680 156" role="img" aria-label="每日流量折线图" @mouseleave="chartHover = false">
+        <svg class="traffic-chart" viewBox="0 0 680 156" preserveAspectRatio="xMidYMid meet" role="img" aria-label="每日流量折线图" @mouseleave="chartHover = false">
           <defs><linearGradient id="traffic-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3155ee" stop-opacity=".28"/><stop offset="1" stop-color="#3155ee" stop-opacity="0"/></linearGradient></defs>
           <line v-for="y in [36, 70, 104, 134]" :key="y" x1="28" x2="652" :y1="y" :y2="y" stroke="var(--border)" stroke-dasharray="3 5"/>
           <path :d="chartArea" fill="url(#traffic-area)"/>
           <path :d="chartLine" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-          <path v-if="chartPoints.length > 1" class="chart-comet-trail" :d="chartLine" pathLength="700"/>
-          <circle v-if="chartPoints.length > 1" class="chart-comet-head" r="4"><animateMotion :path="chartLine" dur="3.2s" repeatCount="indefinite"/></circle>
           <g v-for="(point, index) in chartPoints" :key="point.key" class="traffic-point">
-            <circle :cx="point.x" :cy="point.y" r="4"/>
-            <circle :cx="point.x" :cy="point.y" r="15" fill="transparent" tabindex="0" :aria-label="`${date(point.timestamp)} ${bytes(point.amount)}`" @pointerenter="showChartPoint(index)" @mouseover="showChartPoint(index)" @focus="showChartPoint(index)"/>
+            <circle class="traffic-node" :cx="point.x" :cy="point.y" r="4" vector-effect="non-scaling-stroke"/>
+            <circle class="traffic-hit-area" :cx="point.x" :cy="point.y" r="15" tabindex="0" :aria-label="`${date(point.timestamp)} ${bytes(point.amount)}`" @pointerenter="showChartPoint(index)" @mouseover="showChartPoint(index)" @focus="showChartPoint(index)"/>
           </g>
           <Transition name="chart-fade"><g v-if="chartHover && activeTraffic" class="chart-tooltip" :transform="chartTooltipTransform" pointer-events="none">
             <line class="chart-tooltip-guide" :x1="Number(activeTraffic.x) < 510 ? 0 : 164" :y1="Number(activeTraffic.y) < 62 ? 0 : 74" :x2="Number(activeTraffic.x) < 510 ? -14 : 176" :y2="Number(activeTraffic.y) < 62 ? -16 : 84"/><rect width="164" height="74" rx="10"/><text class="tooltip-date" x="12" y="18">{{ date(activeTraffic.timestamp) }}</text><text x="12" y="37">上传 {{ bytes(activeTraffic.u) }}</text><text x="12" y="53">下载 {{ bytes(activeTraffic.d) }}</text><text class="tooltip-total" x="12" y="69">总计 {{ bytes(activeTraffic.amount) }}</text>
