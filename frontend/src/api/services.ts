@@ -1,5 +1,10 @@
 import { getData, postData, postRawData } from './client'
 
+export const guestApi = {
+  plans: () => getData<any[]>('/guest/plan/fetch'),
+  servers: () => getData<any[]>('/guest/server/fetch'),
+}
+
 export const authApi = {
   config: () => getData<any>('/guest/comm/config'),
   login: (payload: object) => postData<any>('/passport/auth/login', payload),
@@ -40,9 +45,9 @@ export const serviceApi = {
   replyTicket: (payload: object) => postData<any>('/user/ticket/reply', payload),
   closeTicket: (id: number) => postData<any>('/user/ticket/close', { id }),
   servers: () => getData<any[]>('/user/server/fetch'),
-  knowledge: () => getData<any[]>('/user/knowledge/fetch', { language: localStorage.getItem('misaka.locale') || 'zh-CN' }),
+  knowledge: (params?: { keyword?: string }) => getData<any[]>('/user/knowledge/fetch', { language: localStorage.getItem('misaka.locale') || 'zh-CN', ...params }),
   knowledgeCategories: () => getData<any[]>('/user/knowledge/getCategory', { language: localStorage.getItem('misaka.locale') || 'zh-CN' }),
-  traffic: () => getData<any>('/user/stat/getTrafficLog'),
+  traffic: (params?: { days?: number }) => getData<any>('/user/stat/getTrafficLog', params),
   invites: () => getData<any>('/user/invite/fetch'),
   inviteDetails: (params?: object) => getData<any>('/user/invite/details', params),
   createInvite: () => getData<any>('/user/invite/save'),

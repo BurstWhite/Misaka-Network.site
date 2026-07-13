@@ -1,10 +1,12 @@
 <script setup lang="ts">
+/* eslint-disable vue/no-v-html -- renderRichText applies a strict DOM allowlist before rendering. */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { serviceApi } from '@/api/services'
 import PageState from '@/shared/PageState.vue'
 import Icon from '@/shared/Icon.vue'
 import { bytes, date, money } from '@/shared/format'
+import { aggregateTrafficByDay } from '@/shared/traffic'
 
 const route = useRoute()
 const loading = ref(true)
@@ -18,6 +20,7 @@ const inviteSaving = ref(false)
 const giftCode = ref('')
 const giftSaving = ref(false)
 const message = ref('')
+const knowledgeKeyword = ref('')
 const chartFocus = ref(0)
 const chartHover = ref(false)
 const selectedServerId = ref<string | number | null>(null)
@@ -29,17 +32,17 @@ const kind = computed(() => String(route.meta.kind))
 
 const meta: Record<string, [string, string]> = {
   invite: ['我的邀请', '生成邀请码，点击邀请码查看对应的被邀请人信息与返佣记录。'],
-  traffic: ['流量明细', '按日期查看近一个月的上传、下载与总用量。'],
+  traffic: ['流量明细', '按日期查看最近 7 天的上传、下载与总用量。'],
   servers: ['节点状态', '实时查看可用节点、倍率与最近心跳。'],
-  knowledge: ['使用文档', '客户端配置与常见问题。'],
+  knowledge: ['使用文档', '客户端配置、订阅导入与常见问题。'],
   gifts: ['礼品卡', '兑换礼品卡并查看历史记录。'],
 }
 
 const loaders: Record<string, () => Promise<any>> = {
   invite: serviceApi.invites,
-  traffic: serviceApi.traffic,
+  traffic: () => serviceApi.traffic({ days: 7 }),
   servers: serviceApi.servers,
-  knowledge: serviceApi.knowledge,
+  knowledge: () => serviceApi.knowledge({ keyword: knowledgeKeyword.value.trim() || undefined }),
   gifts: serviceApi.giftHistory,
 }
 
@@ -116,7 +119,10 @@ async function redeemGift() {
 }
 
 onMounted(load)
-watch(kind, load)
+watch(kind, () => {
+  knowledgeKeyword.value = ''
+  void load()
+})
 watch(selectedKnowledge, async (value) => {
   if (value) {
     previousBodyOverflow = document.body.style.overflow
@@ -148,12 +154,13 @@ const selectedServer = computed(() => rows.value.find((server) => String(server.
 const onlineServerCount = computed(() => rows.value.filter((server) => serverStatus(server).key === 'online').length)
 
 const inviteStats = computed(() => data.value?.stat || [])
-const trafficRows = computed(() => rows.value.slice().sort((a, b) => Number(a.record_at || 0) - Number(b.record_at || 0)))
-const trafficMax = computed(() => Math.max(1, ...trafficRows.value.map((item) => Number(item.u || 0) + Number(item.d || 0))))
+const trafficRows = computed(() => aggregateTrafficByDay(rows.value, 7))
+const trafficMax = computed(() => Math.max(1, ...trafficRows.value.map((item) => item.amount)))
+const trafficTotal = computed(() => trafficRows.value.reduce((sum, item) => sum + item.amount, 0))
+const trafficHasData = computed(() => trafficRows.value.some((item) => item.amount > 0))
 const chartPoints = computed(() => trafficRows.value.map((item, index) => {
   const width = Math.max(1, trafficRows.value.length - 1)
-  const amount = Number(item.u || 0) + Number(item.d || 0)
-  return { ...item, amount, x: 28 + index / width * 624, y: 134 - amount / trafficMax.value * 98 }
+  return { ...item, x: 28 + index / width * 624, y: 134 - item.amount / trafficMax.value * 98 }
 }))
 const chartLine = computed(() => chartPoints.value.map((item, index) => `${index ? 'L' : 'M'} ${item.x} ${item.y}`).join(' '))
 const chartArea = computed(() => chartPoints.value.length ? `${chartLine.value} L 652 134 L 28 134 Z` : '')
@@ -187,17 +194,51 @@ function serverCode(server: any) {
   return match?.[1]?.toUpperCase() || String(server?.type || 'NODE').slice(0, 4).toUpperCase()
 }
 
-function tags(value: unknown): string[] { return Array.isArray(value) ? value : String(value || '').split(',').filter(Boolean) }
 function openKnowledge(item: any, event: MouseEvent) {
   knowledgeOpener = event.currentTarget as HTMLElement
   selectedKnowledge.value = item
 }
 function closeKnowledge() { selectedKnowledge.value = null }
 function sanitizeHtml(value: string): string {
-  return value.replace(/<\/?(script|style|iframe|object|embed|form)[^>]*>[\s\S]*?<\/?\1>/gi, '').replace(/\son\w+=("[^"]*"|'[^']*'|[^\s>]+)/gi, '').replace(/(href|src)\s*=\s*(['"])\s*javascript:[\s\S]*?\2/gi, '$1="#"')
+  const allowedTags = new Set(['A', 'BR', 'CODE', 'H2', 'H3', 'H4', 'HR', 'IMG', 'LI', 'P', 'PRE', 'STRONG', 'TABLE', 'TBODY', 'TD', 'TH', 'THEAD', 'TR', 'UL'])
+  const blockedTags = new Set(['EMBED', 'FORM', 'IFRAME', 'MATH', 'OBJECT', 'SCRIPT', 'STYLE', 'SVG'])
+  const template = document.createElement('template')
+  template.innerHTML = value
+
+  for (const element of Array.from(template.content.querySelectorAll('*'))) {
+    if (blockedTags.has(element.tagName)) {
+      element.remove()
+      continue
+    }
+    if (!allowedTags.has(element.tagName)) {
+      element.replaceWith(...Array.from(element.childNodes))
+      continue
+    }
+
+    for (const attribute of Array.from(element.attributes)) {
+      const allowed = (element.tagName === 'A' && ['href', 'title'].includes(attribute.name))
+        || (element.tagName === 'IMG' && ['alt', 'src', 'title'].includes(attribute.name))
+      if (!allowed) element.removeAttribute(attribute.name)
+    }
+
+    if (element instanceof HTMLAnchorElement) {
+      if (!isSafeUrl(element.getAttribute('href'), ['http:', 'https:', 'mailto:'])) element.removeAttribute('href')
+      element.target = '_blank'
+      element.rel = 'noopener noreferrer'
+    }
+    if (element instanceof HTMLImageElement && !isSafeUrl(element.getAttribute('src'), ['http:', 'https:'])) {
+      element.removeAttribute('src')
+    }
+  }
+
+  return template.innerHTML
+}
+function isSafeUrl(value: string | null, protocols: string[]): boolean {
+  if (!value) return false
+  try { return protocols.includes(new URL(value, window.location.origin).protocol) } catch { return false }
 }
 function renderRichText(value: unknown, title = ''): string {
-  let html = sanitizeHtml(String(value || '').replace(/\r\n?/g, '\n')).trim()
+  let html = String(value || '').replace(/\r\n?/g, '\n').trim()
   if (title) html = html.replace(new RegExp(`^#\\s+${title.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\s*\\n?`, 'i'), '')
   html = html.replace(/^###\s+(.+)$/gm, '<h4>$1</h4>').replace(/^##\s+(.+)$/gm, '<h3>$1</h3>').replace(/^#\s+(.+)$/gm, '<h2>$1</h2>')
   html = html.replace(/^```(?:\w+)?\n([\s\S]*?)\n```$/gm, '<pre><code>$1</code></pre>').replace(/^---$/gm, '<hr>')
@@ -211,7 +252,8 @@ function renderRichText(value: unknown, title = ''): string {
   html = html.replace(/^\s*[-*]\s+(.+)$/gm, '<li>$1</li>').replace(/(?:<li>[\s\S]*?<\/li>\s*)+/g, (list) => `<ul>${list}</ul>`)
   html = html.replace(/!\[([^\]]*)\]\(([^\s)]+)(?:\s+"[^"]*")?\)/g, '<img alt="$1" src="$2">').replace(/\[([^\]]+)\]\(([^\s)]+)(?:\s+"[^"]*")?\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>')
-  return html.split(/\n{2,}/).map((block) => /^<(h[234]|ul|pre|hr|img)/i.test(block.trim()) ? block : `<p>${block.replace(/\n/g, '<br>')}</p>`).join('')
+  html = html.split(/\n{2,}/).map((block) => /^<(h[234]|ul|pre|hr|img)/i.test(block.trim()) ? block : `<p>${block.replace(/\n/g, '<br>')}</p>`).join('')
+  return sanitizeHtml(html)
 }
 </script>
 
@@ -219,15 +261,20 @@ function renderRichText(value: unknown, title = ''): string {
   <PageState :loading="loading" :error="error" @retry="load">
     <div class="page-heading">
       <div><h1>{{ meta[kind]?.[0] }}</h1><p>{{ meta[kind]?.[1] }}</p></div>
-      <div v-if="kind === 'invite'" class="page-actions">
+      <form v-if="kind === 'knowledge'" class="knowledge-search page-actions" @submit.prevent="load">
+        <input v-model="knowledgeKeyword" type="search" aria-label="搜索使用文档" placeholder="搜索文档标题或内容"/>
+        <button class="button primary" type="submit" :disabled="loading">{{ loading ? '搜索中…' : '搜索' }}</button>
+        <button v-if="knowledgeKeyword" class="button secondary" type="button" @click="knowledgeKeyword=''; load()">清除</button>
+      </form>
+      <div v-else-if="kind === 'invite'" class="page-actions">
         <button class="button primary" :disabled="inviteSaving" @click="createInvite">{{ inviteSaving ? '生成中…' : '生成邀请码' }}</button>
       </div>
     </div>
     <p v-if="message" class="form-message success">{{ message }}</p>
 
     <section v-if="kind === 'traffic'" class="panel traffic-panel">
-      <header><div><h2>每日流量趋势</h2><p>悬浮折线节点查看当日用量</p></div><span class="traffic-total"><Icon name="chart" :size="17" /> {{ bytes(trafficRows.reduce((sum, item) => sum + Number(item.u || 0) + Number(item.d || 0), 0)) }}</span></header>
-      <div v-if="chartPoints.length" class="traffic-chart-wrap">
+      <header><div><h2>每日流量趋势</h2><p>最近 7 天，按日汇总上传、下载与总用量</p></div><span class="traffic-total"><Icon name="chart" :size="17" /> {{ bytes(trafficTotal) }}</span></header>
+      <div v-if="trafficHasData" class="traffic-chart-wrap">
         <svg class="traffic-chart" viewBox="0 0 680 156" role="img" aria-label="每日流量折线图" @mouseleave="chartHover = false">
           <defs><linearGradient id="traffic-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3155ee" stop-opacity=".28"/><stop offset="1" stop-color="#3155ee" stop-opacity="0"/></linearGradient></defs>
           <line v-for="y in [36, 70, 104, 134]" :key="y" x1="28" x2="652" :y1="y" :y2="y" stroke="var(--border)" stroke-dasharray="3 5"/>
@@ -235,17 +282,18 @@ function renderRichText(value: unknown, title = ''): string {
           <path :d="chartLine" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
           <path v-if="chartPoints.length > 1" class="chart-comet-trail" :d="chartLine" pathLength="700"/>
           <circle v-if="chartPoints.length > 1" class="chart-comet-head" r="4"><animateMotion :path="chartLine" dur="3.2s" repeatCount="indefinite"/></circle>
-          <g v-for="(point, index) in chartPoints" :key="point.record_at" class="traffic-point">
+          <g v-for="(point, index) in chartPoints" :key="point.key" class="traffic-point">
             <circle :cx="point.x" :cy="point.y" :r="index === chartFocus ? 6 : 4"/>
-            <circle :cx="point.x" :cy="point.y" r="15" fill="transparent" tabindex="0" :aria-label="`${date(point.record_at)} ${bytes(point.amount)}`" @pointerenter="showChartPoint(index)" @mouseover="showChartPoint(index)" @focus="showChartPoint(index)"/>
+            <circle :cx="point.x" :cy="point.y" r="15" fill="transparent" tabindex="0" :aria-label="`${date(point.timestamp)} ${bytes(point.amount)}`" @pointerenter="showChartPoint(index)" @mouseover="showChartPoint(index)" @focus="showChartPoint(index)"/>
           </g>
           <Transition name="chart-fade"><g v-if="chartHover && activeTraffic" class="chart-tooltip" :transform="chartTooltipTransform" pointer-events="none">
-            <line class="chart-tooltip-guide" :x1="Number(activeTraffic.x) < 510 ? 0 : 164" :y1="Number(activeTraffic.y) < 62 ? 0 : 74" :x2="Number(activeTraffic.x) < 510 ? -14 : 176" :y2="Number(activeTraffic.y) < 62 ? -16 : 84"/><rect width="164" height="74" rx="10"/><text class="tooltip-date" x="12" y="18">{{ date(activeTraffic.record_at) }}</text><text x="12" y="37">上传 {{ bytes(activeTraffic.u) }}</text><text x="12" y="53">下载 {{ bytes(activeTraffic.d) }}</text><text class="tooltip-total" x="12" y="69">总计 {{ bytes(activeTraffic.amount) }}</text>
+            <line class="chart-tooltip-guide" :x1="Number(activeTraffic.x) < 510 ? 0 : 164" :y1="Number(activeTraffic.y) < 62 ? 0 : 74" :x2="Number(activeTraffic.x) < 510 ? -14 : 176" :y2="Number(activeTraffic.y) < 62 ? -16 : 84"/><rect width="164" height="74" rx="10"/><text class="tooltip-date" x="12" y="18">{{ date(activeTraffic.timestamp) }}</text><text x="12" y="37">上传 {{ bytes(activeTraffic.u) }}</text><text x="12" y="53">下载 {{ bytes(activeTraffic.d) }}</text><text class="tooltip-total" x="12" y="69">总计 {{ bytes(activeTraffic.amount) }}</text>
           </g></Transition>
         </svg>
+        <div class="traffic-axis" aria-hidden="true"><span v-for="day in trafficRows" :key="day.key">{{ day.label }}</span></div>
         <div class="chart-hint">悬浮折线节点查看当日流量</div>
       </div>
-      <div v-else class="page-state">暂无流量记录</div>
+      <div v-else class="page-state">最近 7 天暂无流量记录</div>
     </section>
 
     <section v-else-if="kind === 'servers'" class="panel dashboard-node-panel server-directory-panel">
@@ -275,7 +323,7 @@ function renderRichText(value: unknown, title = ''): string {
           </button>
         </div>
       </div>
-      <div v-if="!knowledgeGroups.length" class="page-state">暂无文档</div>
+      <div v-if="!knowledgeGroups.length" class="page-state">{{ knowledgeKeyword ? '暂无匹配文档' : '暂无文档' }}</div>
     </section>
 
     <template v-else>

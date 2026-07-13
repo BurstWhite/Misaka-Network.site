@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import { guestApi } from '@/api/services'
 import { runtimeConfig } from '@/app/config'
 import Icon from '@/shared/Icon.vue'
+import { bytes, money } from '@/shared/format'
+import { displayNodeCode, displayRate, extractRows, stripMarkup } from '@/shared/catalog'
+import type { PublicNode, PublicPlan } from '@/shared/catalog'
 
 const yearly = ref(true)
 const menuOpen = ref(false)
 const observer = ref<IntersectionObserver>()
-
-const nodes = [
-  { city: 'Tokyo', code: 'JP', latency: '32 ms', load: 34 },
-  { city: 'Singapore', code: 'SG', latency: '48 ms', load: 51 },
-  { city: 'Los Angeles', code: 'US', latency: '136 ms', load: 28 },
-  { city: 'Frankfurt', code: 'DE', latency: '182 ms', load: 43 },
-]
+const landingLoading = ref(true)
+const planError = ref('')
+const nodeError = ref('')
+const nodes = ref<PublicNode[]>([])
+const plans = ref<PublicPlan[]>([])
+const selectedNodeId = ref<string | number | null>(null)
 
 const features = [
   ['全球节点', '智能选择更稳定的连接路径，在不同网络环境下保持顺畅。', 'globe'],
@@ -21,17 +24,97 @@ const features = [
   ['用量清晰', '流量、到期时间与在线状态集中呈现，重要信息一眼可见。', 'chart'],
 ]
 
-const plans = [
-  { name: '轻量', monthly: '灵活', yearly: '灵活', desc: '适合轻度访问与个人设备。', items: ['全球线路接入', '多端订阅支持', '流量与到期提醒', '工单技术支持'] },
-  { name: '标准', monthly: '按月', yearly: '按年', desc: '适合日常使用与多设备连接。', items: ['更高流量额度', '优选线路接入', '多设备同时使用', '订阅随时重置'], featured: true },
-  { name: '专业', monthly: '按需', yearly: '按需', desc: '适合高频使用与进阶需求。', items: ['大流量套餐可选', '高倍率线路选择', '完整设备兼容', '优先技术支持'] },
-]
+const selectedNode = computed(() => nodes.value.find((node) => String(node.id) === String(selectedNodeId.value)) || nodes.value[0] || null)
+const landingStatus = computed(() => {
+  if (landingLoading.value) return '正在同步公开状态'
+  if (nodeError.value) return '节点状态暂不可用'
+  return nodes.value.length ? String(nodes.value.length) + ' 个公开节点' : '暂无公开节点'
+})
+
+function errorMessage(reason: unknown, fallback: string): string {
+  return String((reason as { message?: string })?.message || fallback)
+}
+
+async function loadCatalog() {
+  landingLoading.value = true
+  planError.value = ''
+  nodeError.value = ''
+  const [planResult, nodeResult] = await Promise.allSettled([guestApi.plans(), guestApi.servers()])
+
+  if (planResult.status === 'fulfilled') {
+    plans.value = extractRows<PublicPlan>(planResult.value)
+  } else {
+    plans.value = []
+    planError.value = errorMessage(planResult.reason, '公开套餐暂时无法加载')
+  }
+
+  if (nodeResult.status === 'fulfilled') {
+    nodes.value = extractRows<PublicNode>(nodeResult.value)
+    selectedNodeId.value = nodes.value[0]?.id ?? null
+  } else {
+    nodes.value = []
+    selectedNodeId.value = null
+    nodeError.value = errorMessage(nodeResult.reason, '公开节点暂时无法加载')
+  }
+
+  landingLoading.value = false
+}
+
+function selectNode(node: PublicNode) {
+  selectedNodeId.value = node.id
+}
+
+function scrollToSection(id: string) {
+  menuOpen.value = false
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function nodeStatus(node: PublicNode | null | undefined) {
+  if (!node?.is_online) return { key: 'offline', label: '离线' }
+  if (node.last_check_at && Date.now() / 1000 - Number(node.last_check_at) > 300) return { key: 'warming', label: '待确认' }
+  return { key: 'online', label: '在线' }
+}
+
+function nodeDescriptor(node: PublicNode): string {
+  const tags = Array.isArray(node.tags) ? node.tags.filter(Boolean).slice(0, 2).join(' · ') : ''
+  return tags || String(node.type || '线路').toUpperCase() + ' · ' + nodeStatus(node).label
+}
+
+function planPrice(plan: PublicPlan): string {
+  const value = yearly.value ? plan.year_price : plan.month_price
+  return value === null || value === undefined || value === '' ? '暂未开放' : money(value)
+}
+
+function planItems(plan: PublicPlan): string[] {
+  const items: string[] = []
+  const transfer = Number(plan.transfer_enable)
+  const speed = Number(plan.speed_limit)
+  const devices = Number(plan.device_limit)
+  const capacity = Number(plan.capacity_limit)
+  if (Number.isFinite(transfer) && transfer > 0) items.push(bytes(transfer) + ' 流量')
+  items.push(Number.isFinite(speed) && speed > 0 ? speed + ' Mbps 速率' : '不限速')
+  items.push(Number.isFinite(devices) && devices > 0 ? devices + ' 台设备' : '设备不限')
+  if (Number.isFinite(capacity) && capacity > 0) items.push('剩余 ' + capacity + ' 个名额')
+  return items
+}
+
+function planDescription(plan: PublicPlan): string {
+  const content = stripMarkup(plan.content)
+  if (content) return content.length > 86 ? content.slice(0, 86) + '…' : content
+  const facts = planItems(plan).slice(0, 2)
+  return facts.length ? facts.join(' · ') : '具体权益以当前套餐配置为准。'
+}
+
+function isFeaturedPlan(plan: PublicPlan): boolean {
+  return (Array.isArray(plan.tags) ? plan.tags : []).some((tag) => /推荐|featured/i.test(String(tag)))
+}
 
 onMounted(() => {
   observer.value = new IntersectionObserver((entries) => {
     entries.forEach((entry) => entry.isIntersecting && entry.target.classList.add('is-visible'))
   }, { threshold: 0.12 })
   document.querySelectorAll('.landing .reveal').forEach((element) => observer.value?.observe(element))
+  void loadCatalog()
 })
 onBeforeUnmount(() => observer.value?.disconnect())
 </script>
@@ -46,11 +129,11 @@ onBeforeUnmount(() => observer.value?.disconnect())
     <svg class="noise-filter" aria-hidden="true"><filter id="misaka-noise"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .35 0"/><feComposite in2="SourceGraphic" operator="in" result="noise"/><feBlend in="SourceGraphic" in2="noise" mode="multiply"/></filter></svg>
 
     <nav class="nav wrap">
-      <a class="logo" href="#top" :aria-label="runtimeConfig.appName">
+      <a class="logo" href="#top" :aria-label="runtimeConfig.appName" @click.prevent="scrollToSection('top')">
         <span class="logo-mark"><i/><i/></span><span>{{ runtimeConfig.appName }}</span>
       </a>
       <div class="nav-links" :class="{ open: menuOpen }">
-        <a href="#network" @click="menuOpen=false">网络</a><a href="#features" @click="menuOpen=false">能力</a><a href="#plans" @click="menuOpen=false">套餐</a><a href="#support" @click="menuOpen=false">支持</a>
+        <a href="#network" @click.prevent="scrollToSection('network')">网络</a><a href="#features" @click.prevent="scrollToSection('features')">能力</a><a href="#plans" @click.prevent="scrollToSection('plans')">套餐</a><a href="#support" @click.prevent="scrollToSection('support')">支持</a>
       </div>
       <RouterLink class="pill pill-light nav-cta" to="/login">进入控制台 <span>→</span></RouterLink>
       <button class="menu-button" type="button" aria-label="打开菜单" @click="menuOpen=!menuOpen"><Icon :name="menuOpen ? 'x' : 'menu'" :size="18" /></button>
@@ -65,30 +148,39 @@ onBeforeUnmount(() => observer.value?.disconnect())
     </section>
 
     <div class="system-strip">
-      <div class="wrap system-inner"><div><span class="system-dot"/> <b>Misaka</b><span>网络</span><span>订阅</span><span>节点</span><span>帮助</span></div><div><Icon name="globe" :size="14"/> 全部系统运行正常</div></div>
+      <div class="wrap system-inner"><div><span class="system-dot"/> <b>Misaka</b><span>网络</span><span>订阅</span><span>节点</span><span>帮助</span></div><div><Icon name="globe" :size="14"/> {{ landingStatus }}</div></div>
     </div>
 
     <section id="network" class="network-section wrap reveal">
       <div class="window liquid-glass">
-        <header class="window-bar"><div><i/><i/><i/></div><span>Misaka Network — 控制台</span><span class="live"><i/> 已连接</span></header>
+        <header class="window-bar"><div><i/><i/><i/></div><span>Misaka Network — 公开状态</span><span class="live"><i/> {{ landingStatus }}</span></header>
         <div class="network-body">
           <aside>
             <div class="side-brand"><span class="logo-mark small"><i/><i/></span> Misaka</div>
-            <button class="connect-button"><Icon name="bolt" :size="16"/> 快速连接</button>
+            <RouterLink class="connect-button" to="/login"><Icon name="bolt" :size="16"/> 登录连接</RouterLink>
             <a class="active"><Icon name="dashboard" :size="17"/> 概览</a><a><Icon name="card" :size="17"/> 我的订阅</a><a><Icon name="server" :size="17"/> 节点状态</a><a><Icon name="receipt" :size="17"/> 订单</a><a><Icon name="ticket" :size="17"/> 技术支持</a>
           </aside>
           <div class="node-list">
             <div class="search"><Icon name="globe" :size="15"/> 搜索节点</div>
-            <article v-for="(node, index) in nodes" :key="node.city" :class="{ selected: index === 0 }">
-              <span class="flag">{{ node.code }}</span><div><b>{{ node.city }}</b><small>Anycast · 在线</small></div><span class="latency">{{ node.latency }}</span>
-            </article>
+            <div v-if="landingLoading" class="node-list-state">正在同步节点状态…</div>
+            <template v-else>
+              <button v-for="node in nodes" :key="node.id" type="button" class="node-entry" :class="{ selected: String(node.id) === String(selectedNode && selectedNode.id) }" @click="selectNode(node)">
+                <span class="flag">{{ displayNodeCode(node) }}</span><span><b>{{ node.name || '未命名节点' }}</b><small>{{ nodeDescriptor(node) }}</small></span><span class="latency">{{ displayRate(node.rate) }}</span>
+              </button>
+            </template>
+            <div v-if="!landingLoading && !nodes.length" class="node-list-state">{{ nodeError || '暂无公开节点，请登录后查看可用线路。' }}</div>
           </div>
-          <div class="network-detail">
-            <div class="detail-head"><div><span class="status-dot"/> 当前线路</div><span>自动选择</span></div>
-            <h2>Tokyo · JP</h2><p>为你选择的低延迟优选节点</p>
-            <div class="pulse-map" aria-label="东京节点连接示意"><span class="ring r1"/><span class="ring r2"/><span class="core"/><i class="route route-one"/><i class="route route-two"/></div>
-            <div class="metrics"><div><span>实时延迟</span><strong>32 <small>ms</small></strong></div><div><span>今日流量</span><strong>1.8 <small>GB</small></strong></div><div><span>线路负载</span><strong>34 <small>%</small></strong></div></div>
-            <button class="detail-button">导入到客户端 <span>→</span></button>
+          <div v-if="selectedNode" class="network-detail">
+            <div class="detail-head"><div><span :class="['status-dot', nodeStatus(selectedNode).key]"/> 当前线路</div><span>公开状态</span></div>
+            <h2>{{ selectedNode.name || '公开节点' }} · {{ displayNodeCode(selectedNode) }}</h2><p>{{ nodeStatus(selectedNode).label }} · {{ String(selectedNode.type || '线路').toUpperCase() }}</p>
+            <div class="pulse-map" :aria-label="String(selectedNode.name || '节点') + ' 状态示意'"><span class="ring r1"/><span class="ring r2"/><span class="core"/><i class="route route-one"/><i class="route route-two"/></div>
+            <div class="metrics"><div><span>连接状态</span><strong>{{ nodeStatus(selectedNode).label }}</strong></div><div><span>线路倍率</span><strong>{{ displayRate(selectedNode.rate) }}</strong></div><div><span>连接协议</span><strong>{{ String(selectedNode.type || '—').toUpperCase() }}</strong></div></div>
+            <RouterLink class="detail-button" to="/login">登录查看完整配置 <span>→</span></RouterLink>
+          </div>
+          <div v-else class="network-detail network-empty">
+            <div class="detail-head"><div><span class="status-dot offline"/> 当前线路</div><span>暂无数据</span></div>
+            <h2>暂无公开节点</h2><p>登录后查看与你的套餐匹配的线路。</p>
+            <RouterLink class="detail-button" to="/login">进入控制台 <span>→</span></RouterLink>
           </div>
         </div>
       </div>
@@ -97,8 +189,9 @@ onBeforeUnmount(() => observer.value?.disconnect())
     <section id="features" class="feature-intro wrap reveal">
       <div><div class="eyebrow"><span/> 核心体验 <em>为连接而生</em></div><h2>复杂留在背后。<br>连接只需一步。</h2><p>Misaka Network 将线路、订阅、设备与支持集中到一个清晰的界面中，让每次连接都简单、透明、可掌控。</p></div>
       <div class="triage liquid-glass">
-        <header><span>智能线路选择</span><small>刚刚更新</small></header>
-        <article v-for="node in nodes" :key="node.code"><span class="flag">{{ node.code }}</span><div><b>{{ node.city }}</b><small>{{ node.latency }} · 稳定</small></div><div class="load"><i :style="{width: `${node.load}%`}"/></div></article>
+        <header><span>公开节点状态</span><small>{{ landingLoading ? '同步中' : nodeError ? '同步失败' : '实时摘要' }}</small></header>
+        <article v-for="node in nodes.slice(0, 4)" :key="node.id"><span class="flag">{{ displayNodeCode(node) }}</span><span><b>{{ node.name || '未命名节点' }}</b><small>{{ nodeStatus(node).label }} · {{ String(node.type || '线路').toUpperCase() }}</small></span><span class="triage-status" :class="nodeStatus(node).key">{{ displayRate(node.rate) }}</span></article>
+        <div v-if="!landingLoading && !nodes.length" class="triage-empty">{{ nodeError || '暂无公开节点状态' }}</div>
       </div>
     </section>
 
@@ -110,20 +203,23 @@ onBeforeUnmount(() => observer.value?.disconnect())
 
     <section id="plans" class="pricing reveal">
       <div class="pricing-title"><span>选择适合你的连接方式</span><h2>清晰套餐。<br><i>自由抵达</i></h2></div>
-      <div class="plan-grid">
-        <article v-for="plan in plans" :key="plan.name" :class="['plan-card', { featured: plan.featured }]">
-          <small>{{ plan.name }}</small><h3>{{ yearly ? plan.yearly : plan.monthly }}</h3><p>{{ plan.desc }}</p><ul><li v-for="item in plan.items" :key="item"><span>✓</span>{{ item }}</li></ul><RouterLink to="/register">查看可用套餐</RouterLink>
+      <div v-if="landingLoading" class="landing-data-state">正在读取公开套餐…</div>
+      <div v-else-if="planError" class="landing-data-state"><p>{{ planError }}</p><RouterLink to="/login">登录后查看可用套餐 <span>→</span></RouterLink></div>
+      <div v-else-if="!plans.length" class="landing-data-state"><p>当前暂无可售套餐。</p><RouterLink to="/login">进入控制台查看 <span>→</span></RouterLink></div>
+      <div v-else class="plan-grid">
+        <article v-for="plan in plans" :key="plan.id" :class="['plan-card', { featured: isFeaturedPlan(plan) }]">
+          <small>{{ plan.name || '未命名套餐' }}</small><h3>{{ planPrice(plan) }}</h3><p>{{ planDescription(plan) }}</p><ul><li v-for="item in planItems(plan)" :key="item"><span>✓</span>{{ item }}</li></ul><RouterLink to="/register">查看套餐详情 <span>→</span></RouterLink>
         </article>
       </div>
       <div class="billing-toggle"><span :class="{ active: !yearly }">月付</span><button type="button" :class="{ active: yearly }" :aria-pressed="yearly" @click="yearly=!yearly"><i/></button><span :class="{ active: yearly }">年付</span></div>
-      <p class="pricing-note">具体价格与可用线路以登录后的套餐页面为准</p>
+      <p class="pricing-note">当前显示 {{ yearly ? '年付' : '月付' }}公开价格，完整权益以套餐详情为准</p>
     </section>
 
     <section id="support" class="final-cta wrap reveal liquid-glass">
       <div class="cta-glow"/><div class="logo-mark large"><i/><i/></div><h2>少一点等待。<br>多一点抵达。</h2><p>创建你的 Misaka Network 账户，让可靠连接成为每天最自然的一部分。</p><div><RouterLink class="pill pill-light" to="/register">创建账户 <span>→</span></RouterLink><RouterLink class="pill pill-ghost" to="/login">已有账户</RouterLink></div>
     </section>
 
-    <footer class="footer wrap"><a class="logo" href="#top"><span class="logo-mark small"><i/><i/></span><span>{{ runtimeConfig.appName }}</span></a><p>Reliable global connectivity.</p><span>© {{ new Date().getFullYear() }} Misaka Network</span></footer>
+    <footer class="footer wrap"><a class="logo" href="#top" @click.prevent="scrollToSection('top')"><span class="logo-mark small"><i/><i/></span><span>{{ runtimeConfig.appName }}</span></a><p>Reliable global connectivity.</p><span>© {{ new Date().getFullYear() }} Misaka Network</span></footer>
   </main>
 </template>
 
@@ -159,5 +255,46 @@ onBeforeUnmount(() => observer.value?.disconnect())
 }
 @media (max-width: 700px) {
   .hero { height: calc(100svh - 113px); padding: 32px 0; justify-content: center; }
+}
+
+.node-entry {
+  width: 100%;
+  height: 78px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.node-entry > span:nth-child(2) { min-width: 0; flex: 1; }
+.node-entry.selected { background: rgba(75,191,255,.08); box-shadow: inset 2px 0 var(--cyan); }
+.node-entry:hover { background: rgba(255,255,255,.05); }
+.node-entry:focus-visible { outline: 1px solid var(--cyan); outline-offset: -2px; }
+.node-list-state { min-height: 78px; padding: 16px; display: grid; place-items: center; color: rgba(255,255,255,.35); font-size: 10px; line-height: 1.6; text-align: center; }
+.status-dot.offline { background: #e05267; box-shadow: 0 0 9px rgba(224,82,103,.8); }
+.status-dot.warming { background: #efb82d; box-shadow: 0 0 9px rgba(239,184,45,.8); }
+.network-empty { display: flex; flex-direction: column; }
+.network-empty .detail-button { margin-top: auto; }
+.triage article { grid-template-columns: 32px minmax(0, 1fr) auto; }
+.triage-status { color: #63dfae; font-size: 9px; font-weight: 700; }
+.triage-status.offline { color: #e58b9a; }
+.triage-status.warming { color: #efc55b; }
+.triage-empty { padding: 24px 10px 8px; color: rgba(255,255,255,.35); font-size: 10px; text-align: center; }
+.landing-data-state { width: min(1100px, calc(100% - 32px)); min-height: 230px; margin: 70px auto 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border: 1px dashed rgba(255,255,255,.2); border-radius: 24px; color: rgba(255,255,255,.45); font-size: 12px; text-align: center; }
+.landing-data-state p { margin: 0; }
+.landing-data-state a { color: var(--cyan); font-weight: 700; }
+.landing-data-state a span { transition: transform .2s; }
+.landing-data-state a:hover span { display: inline-block; transform: translateX(2px); }
+
+@media (max-width: 700px) {
+  .node-entry { height: 68px; padding-inline: 11px; }
+  .node-list-state { min-height: 68px; padding-inline: 10px; }
+  .landing-data-state { width: calc(100% - 16px); margin-top: 40px; }
 }
 </style>

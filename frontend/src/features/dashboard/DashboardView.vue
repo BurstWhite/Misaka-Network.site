@@ -6,6 +6,7 @@ import { commerceApi, serviceApi, userApi } from '@/api/services'
 import PageState from '@/shared/PageState.vue'
 import Icon from '@/shared/Icon.vue'
 import { bytes, date, money, orderStatus } from '@/shared/format'
+import { aggregateTrafficByDay } from '@/shared/traffic'
 
 const { t } = useI18n()
 const loading = ref(true)
@@ -35,7 +36,7 @@ async function load() {
       userApi.subscribe(),
       serviceApi.notices().catch(() => []),
       commerceApi.orders().catch(() => []),
-      serviceApi.traffic().catch(() => []),
+      serviceApi.traffic({ days: 7 }).catch(() => []),
       serviceApi.servers().catch(() => []),
     ])
     user.value = u || {}
@@ -68,14 +69,14 @@ function serverStatus(server: any) {
 onMounted(load)
 
 const trafficPoints = computed(() => {
-  const rows = traffic.value.slice().sort((a, b) => Number(a.record_at || 0) - Number(b.record_at || 0)).slice(-7)
-  const max = Math.max(1, ...rows.map((item) => Number(item.u || 0) + Number(item.d || 0)))
+  const rows = aggregateTrafficByDay(traffic.value, 7)
+  const max = Math.max(1, ...rows.map((item) => item.amount))
   const width = Math.max(1, rows.length - 1)
   return rows.map((item, index) => {
-    const amount = Number(item.u || 0) + Number(item.d || 0)
-    return { ...item, amount, x: 10 + index / width * 660, y: 140 - amount / max * 105 }
+    return { ...item, x: 10 + index / width * 660, y: 140 - item.amount / max * 105 }
   })
 })
+const trafficHasData = computed(() => trafficPoints.value.some((point) => point.amount > 0))
 const chartLine = computed(() => trafficPoints.value.map((point, index) => `${index ? 'L' : 'M'} ${point.x} ${point.y}`).join(' '))
 const chartArea = computed(() => trafficPoints.value.length ? `${chartLine.value} L 670 140 L 10 140 Z` : '')
 const activeTraffic = computed(() => trafficPoints.value[chartFocus.value] || trafficPoints.value.at(-1))
@@ -116,10 +117,11 @@ const onlineServerCount = computed(() => servers.value.filter((server) => server
               <path :d="chartArea" fill="url(#dashboard-area)"/><path :d="chartLine" fill="none" stroke="#13aeca" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
               <path v-if="trafficPoints.length > 1" class="chart-comet-trail" :d="chartLine" pathLength="700"/>
               <circle v-if="trafficPoints.length > 1" class="chart-comet-head" r="4"><animateMotion :path="chartLine" dur="3.2s" repeatCount="indefinite"/></circle>
-              <g v-for="(point, index) in trafficPoints" :key="point.record_at" class="traffic-point"><circle :cx="point.x" :cy="point.y" :r="index === chartFocus ? 6 : 4"/><circle :cx="point.x" :cy="point.y" r="15" fill="transparent" tabindex="0" :aria-label="`${date(point.record_at)} ${bytes(point.amount)}`" @pointerenter="showChartPoint(index)" @mouseover="showChartPoint(index)" @focus="showChartPoint(index)"/></g>
-              <Transition name="chart-fade"><g v-if="chartHover && activeTraffic" class="chart-tooltip" :transform="chartTooltipTransform" pointer-events="none"><line class="chart-tooltip-guide" :x1="Number(activeTraffic.x) < 510 ? 0 : 164" :y1="Number(activeTraffic.y) < 62 ? 0 : 74" :x2="Number(activeTraffic.x) < 510 ? -14 : 176" :y2="Number(activeTraffic.y) < 62 ? -16 : 84"/><rect width="164" height="74" rx="10"/><text class="tooltip-date" x="12" y="18">{{ date(activeTraffic.record_at) }}</text><text x="12" y="37">上传 {{ bytes(activeTraffic.u) }}</text><text x="12" y="53">下载 {{ bytes(activeTraffic.d) }}</text><text class="tooltip-total" x="12" y="69">总计 {{ bytes(activeTraffic.amount) }}</text></g></Transition>
+              <g v-for="(point, index) in trafficPoints" :key="point.key" class="traffic-point"><circle :cx="point.x" :cy="point.y" :r="index === chartFocus ? 6 : 4"/><circle :cx="point.x" :cy="point.y" r="15" fill="transparent" tabindex="0" :aria-label="`${date(point.timestamp)} ${bytes(point.amount)}`" @pointerenter="showChartPoint(index)" @mouseover="showChartPoint(index)" @focus="showChartPoint(index)"/></g>
+              <Transition name="chart-fade"><g v-if="chartHover && activeTraffic" class="chart-tooltip" :transform="chartTooltipTransform" pointer-events="none"><line class="chart-tooltip-guide" :x1="Number(activeTraffic.x) < 510 ? 0 : 164" :y1="Number(activeTraffic.y) < 62 ? 0 : 74" :x2="Number(activeTraffic.x) < 510 ? -14 : 176" :y2="Number(activeTraffic.y) < 62 ? -16 : 84"/><rect width="164" height="74" rx="10"/><text class="tooltip-date" x="12" y="18">{{ date(activeTraffic.timestamp) }}</text><text x="12" y="37">上传 {{ bytes(activeTraffic.u) }}</text><text x="12" y="53">下载 {{ bytes(activeTraffic.d) }}</text><text class="tooltip-total" x="12" y="69">总计 {{ bytes(activeTraffic.amount) }}</text></g></Transition>
             </svg>
-            <div class="chart-hint"><span v-if="trafficPoints.length">悬浮折线节点查看当日流量</span><span v-else>暂无流量记录</span></div>
+            <div class="traffic-axis" aria-hidden="true"><span v-for="point in trafficPoints" :key="point.key">{{ point.label }}</span></div>
+            <div class="chart-hint"><span v-if="trafficHasData">悬浮折线节点查看当日流量</span><span v-else>最近 7 天暂无流量记录</span></div>
           </section>
           <section class="panel"><header><h2>{{ t('dashboard.recentOrders') }}</h2><RouterLink to="/orders">{{ t('common.more') }}</RouterLink></header><div class="table-wrap"><table><thead><tr><th>订单号</th><th>套餐</th><th>金额</th><th>状态</th><th>创建时间</th></tr></thead><tbody><tr v-for="order in orders.slice(0, 4)" :key="order.trade_no"><td><RouterLink :to="`/order/${order.trade_no}`">#{{ order.trade_no }}</RouterLink></td><td>{{ order.plan?.name || order.plan_name || '-' }}</td><td>{{ money(order.total_amount ?? order.total) }}</td><td><span class="status success">{{ orderStatus(order.status) }}</span></td><td>{{ date(order.created_at, true) }}</td></tr><tr v-if="!orders.length"><td colspan="5" class="empty-cell">{{ t('common.empty') }}</td></tr></tbody></table></div></section>
         </div>
