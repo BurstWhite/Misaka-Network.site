@@ -31,7 +31,7 @@ class UserUpdate extends FormRequest
             'balance' => 'numeric',
             'commission_type' => 'integer',
             'commission_balance' => 'numeric',
-            'remarks' => 'nullable',
+            'remarks' => 'nullable|string|max:65535',
             'speed_limit' => 'nullable|integer',
             'device_limit' => 'nullable|integer'
         ];
@@ -65,6 +65,8 @@ class UserUpdate extends FormRequest
             'balance.integer' => '余额格式不正确',
             'commission_balance.integer' => '佣金格式不正确',
             'password.min' => '密码长度最小8位',
+            'remarks.string' => '备注格式不正确',
+            'remarks.max' => '备注长度不能超过65535个字符',
             'speed_limit.integer' => '限速格式不正确',
             'device_limit.integer' => '设备数量格式不正确'
         ];

@@ -270,6 +270,11 @@ class UserController extends Controller
         if (isset($params['commission_balance'])) {
             $params['commission_balance'] = $params['commission_balance'] * 100;
         }
+        if (array_key_exists('remarks', $params)) {
+            $params['remarks'] = is_string($params['remarks'])
+                ? trim($params['remarks'])
+                : $params['remarks'];
+        }
 
         $params = HookManager::filter('admin.user.update.params', $params, $request, $user);
 
@@ -317,6 +322,7 @@ class UserController extends Controller
             ->orderBy('id', 'asc')
             ->select([
                 'email',
+                'remarks',
                 'balance',
                 'commission_balance',
                 'transfer_enable',
@@ -345,6 +351,7 @@ class UserController extends Controller
             // 写入CSV头部
             fputcsv($output, [
                 '邮箱',
+                '备注',
                 '余额',
                 '推广佣金',
                 '总流量',
@@ -360,6 +367,7 @@ class UserController extends Controller
                     try {
                         $row = [
                             $user->email,
+                            $user->remarks ?? '',
                             number_format($user->balance / 100, 2),
                             number_format($user->commission_balance / 100, 2),
                             Helper::trafficConvert($user->transfer_enable),
