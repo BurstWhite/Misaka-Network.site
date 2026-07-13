@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { displayNodeCode, displayRate, extractRows, stripMarkup } from '@/shared/catalog'
+import { displayNodeCode, displayRate, extractRows, parsePlanFeatures, stripMarkup } from '@/shared/catalog'
 
 describe('public catalog helpers', () => {
   it('normalizes array and envelope responses without inventing rows', () => {
@@ -17,5 +17,13 @@ describe('public catalog helpers', () => {
 
   it('removes markup before using plan content as plain text', () => {
     expect(stripMarkup('<p>  100 GB </p><br>高速')).toBe('100 GB 高速')
+  })
+
+  it('reads Xboard plan feature JSON without treating markdown as JSON', () => {
+    expect(parsePlanFeatures('[{"support":true,"feature":"流媒体解锁"},{"support":false,"feature":"专线"}]')).toEqual([
+      { support: true, feature: '流媒体解锁' },
+      { support: false, feature: '专线' },
+    ])
+    expect(parsePlanFeatures('#### 套餐详情')).toEqual([])
   })
 })

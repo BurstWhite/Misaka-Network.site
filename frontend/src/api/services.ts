@@ -51,7 +51,4 @@ export const serviceApi = {
   invites: () => getData<any>('/user/invite/fetch'),
   inviteDetails: (params?: object) => getData<any>('/user/invite/details', params),
   createInvite: () => getData<any>('/user/invite/save'),
-  giftHistory: () => getData<any>('/user/gift-card/history'),
-  giftCheck: (code: string) => postData<any>('/user/gift-card/check', { code }),
-  redeemGift: (code: string) => postData<any>('/user/gift-card/redeem', { code }),
 }

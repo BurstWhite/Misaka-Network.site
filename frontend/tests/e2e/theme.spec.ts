@@ -20,7 +20,8 @@ test.beforeEach(async ({ page }) => {
     else if (url.includes('/getSubscribe')) data = { u: 10737418240, d: 21474836480, transfer_enable: 536870912000, subscribe_url: 'https://example.com/sub', expired_at: 1783700000, next_reset_at: 1781108000, plan: { name: '标准套餐', transfer_enable: 500, speed_limit: 300, device_limit: 5, content: '### 套餐权益\n\n- 全球节点\n- 流媒体解锁' } }
     else if (url.includes('/getTrafficLog')) data = Array.from({ length: 20 }, (_, index) => ({ record_at: Math.floor(Date.now() / 86400000) * 86400 - (19 - index) * 86400, u: (index + 1) * 107374182, d: (index + 2) * 107374182 }))
     else if (url.includes('/notice/fetch')) data = [{ id: 1, title: '欢迎使用', created_at: 1780500000, content: `### 服务说明\n\n**安全内容**\n\n<script>window.__noticeXss=1</script><a href="javascript:window.__noticeXss=2" onclick="window.__noticeXss=3">不安全链接</a>\n\n${'公告正文。\n\n'.repeat(80)}` }]
-    else if (url.includes('/plan/fetch')) data = [{ id: 1, name: 'Premium', month_price: 3000, transfer_enable: 200, speed_limit: 1000, device_limit: 10, content: '### 套餐详情\n\n- **流量**：200 GB / 月' }]
+    else if (url.includes('/plan/fetch')) data = [{ id: 1, name: 'Premium', month_price: 3000, transfer_enable: 200, speed_limit: 1000, device_limit: 10, content: '#### 📦 套餐详情\n\n- **流量**：200 GB / 月\n- **速度限制**：1000 Mbps\n- **同时在线设备**：最多 **10 台**\n\n#### 🌟 为什么推荐给你？\n\n适合经常下载大型游戏的用户。' }]
+    else if (url.includes('/coupon/check')) data = { code: 'SAVE20', name: '夏日八折券', type: 2, value: 20, ended_at: 1783700000 }
     else if (url.includes('/getActiveSession')) data = [{ id: 1, device: 'Safari · macOS', ip: '203.0.113.42', current: true, last_login_at: 1780500000 }]
     else if (url.includes('/server/fetch')) data = [{ id: 1, name: '香港 HKG 01', type: 'Shadowsocks', rate: 1, is_online: true, last_check_at: Math.floor(Date.now() / 1000), tags: ['香港', 'BGP'] }, { id: 2, name: '东京 NRT 02', type: 'VLESS', rate: 1.5, is_online: false, last_check_at: 1780500000, tags: ['日本'] }]
     else if (url.includes('/invite/fetch')) data = { codes: [{ code: 'DEMO2026', pv: 3, status: 0, created_at: 1780500000 }], stat: [2, 1200, 0, 10, 1200] }
@@ -49,6 +50,7 @@ test('renders subscription imports and plan information', async ({ page }) => {
 test('renders traffic chart, node states, and invitee detail', async ({ page }) => {
   await expect(page.locator('.chart-panel .traffic-point')).toHaveCount(7)
   await expect(page.locator('.chart-panel .traffic-axis span')).toHaveCount(7)
+  expect(await page.locator('.usage-chart').evaluate((element) => { const box = element.getBoundingClientRect(); return box.width / box.height })).toBeCloseTo(680 / 150, 2)
   await expect.poll(() => page.locator('.chart-panel .traffic-point > circle:first-child').evaluateAll((circles) => circles.every((circle) => circle.getAttribute('r') === '4'))).toBe(true)
   await navigate(page, '/traffic')
   await expect(page.locator('.traffic-chart')).toBeVisible()
@@ -82,7 +84,16 @@ test('renders backend plans, scrollable rich notices, status help, and real sess
   await navigate(page, '/plans')
   await expect(page.locator('.plan-card')).toContainText('200.00 GB')
   await expect(page.locator('.plan-card')).toContainText('1000 Mbps')
-  await expect(page.locator('.plan-card')).toContainText('10 台设备')
+  await expect(page.locator('.plan-card')).toContainText('同时在线设备')
+  await expect(page.locator('.plan-card')).toContainText('为什么推荐给你')
+
+  await navigate(page, '/gifts')
+  await page.getByPlaceholder('输入管理员创建的优惠码').fill('SAVE20')
+  await page.getByRole('button', { name: '选择套餐并验证' }).click()
+  await page.locator('.plan-card').click()
+  await page.getByRole('button', { name: '验证', exact: true }).click()
+  await expect(page.locator('.coupon-preview')).toContainText('夏日八折券')
+  await expect(page.locator('.coupon-preview')).toContainText('优惠后 ¥ 24.00')
 
   await navigate(page, '/profile')
   await expect(page.locator('.session-row')).toContainText('Safari · macOS')

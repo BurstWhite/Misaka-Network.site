@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable vue/no-v-html -- renderRichText applies a strict DOM allowlist before rendering. */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { serviceApi } from '@/api/services'
 import PageState from '@/shared/PageState.vue'
 import Icon from '@/shared/Icon.vue'
@@ -10,6 +10,7 @@ import { bytes, date, money } from '@/shared/format'
 import { aggregateTrafficByDay } from '@/shared/traffic'
 
 const route = useRoute()
+const router = useRouter()
 const loading = ref(true)
 const error = ref('')
 const data = ref<any>(null)
@@ -18,8 +19,7 @@ const detailsLoading = ref(false)
 const expandedInviteCode = ref<string | null>(null)
 const inviteDetailsLoaded = ref(false)
 const inviteSaving = ref(false)
-const giftCode = ref('')
-const giftSaving = ref(false)
+const couponCode = ref('')
 const message = ref('')
 const knowledgeKeyword = ref('')
 const chartFocus = ref(0)
@@ -36,7 +36,7 @@ const meta: Record<string, [string, string]> = {
   traffic: ['流量明细', '按日期查看近 14 天的上传、下载与总用量。'],
   servers: ['节点状态', '实时查看可用节点、倍率与最近心跳。'],
   knowledge: ['使用文档', '客户端配置、订阅导入与常见问题。'],
-  gifts: ['礼品卡', '兑换礼品卡并查看历史记录。'],
+  gifts: ['优惠券', '验证管理员创建的优惠券，并在购买订阅时使用。'],
 }
 
 const loaders: Record<string, () => Promise<any>> = {
@@ -44,7 +44,7 @@ const loaders: Record<string, () => Promise<any>> = {
   traffic: () => serviceApi.traffic({ days: 14 }),
   servers: serviceApi.servers,
   knowledge: () => serviceApi.knowledge({ keyword: knowledgeKeyword.value.trim() || undefined }),
-  gifts: serviceApi.giftHistory,
+  gifts: async () => [],
 }
 
 async function load() {
@@ -104,19 +104,9 @@ async function toggleInviteDetails(code: string) {
   }
 }
 
-async function redeemGift() {
-  if (!giftCode.value.trim()) return
-  giftSaving.value = true
-  try {
-    await serviceApi.redeemGift(giftCode.value.trim())
-    giftCode.value = ''
-    message.value = '礼品卡兑换成功'
-    await load()
-  } catch (e: any) {
-    error.value = e.message
-  } finally {
-    giftSaving.value = false
-  }
+function useCoupon() {
+  if (!couponCode.value.trim()) return
+  void router.push({ path: '/plans', query: { coupon: couponCode.value.trim() } })
 }
 
 onMounted(load)
@@ -327,8 +317,10 @@ function renderRichText(value: unknown, title = ''): string {
 
     <template v-else>
       <section v-if="kind === 'invite'" class="stats-strip"><div><small>已注册用户</small><strong>{{ inviteStats[0] || 0 }}</strong></div><div><small>有效佣金</small><strong>{{ money(inviteStats[1] || 0) }}</strong></div><div><small>佣金比例</small><strong>{{ inviteStats[3] || 0 }}%</strong></div></section>
-      <section v-if="kind === 'gifts'" class="panel gift-redeem"><form class="copy-row" @submit.prevent="redeemGift"><input v-model.trim="giftCode" placeholder="输入礼品卡兑换码" autocomplete="off"/><button class="button primary" :disabled="giftSaving">{{ giftSaving ? '兑换中' : '立即兑换' }}</button></form></section>
-      <section class="panel data-list">
+      <section v-if="kind === 'gifts'" class="panel gift-redeem">
+        <form class="copy-row" @submit.prevent="useCoupon"><input v-model.trim="couponCode" placeholder="输入管理员创建的优惠码" autocomplete="off"/><button class="button primary">选择套餐并验证</button></form>
+      </section>
+      <section v-if="kind !== 'gifts'" class="panel data-list">
         <template v-for="(item, index) in rows" :key="item.id || item.code || index">
           <article v-if="kind === 'invite'" class="invite-entry" :class="{ expanded: expandedInviteCode === item.code }">
             <button type="button" class="invite-code-button" :aria-expanded="expandedInviteCode === item.code" @click="toggleInviteDetails(item.code)">

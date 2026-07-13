@@ -1,19 +1,24 @@
 <script setup lang="ts">
 /* eslint-disable vue/no-v-html -- renderRichText applies a strict DOM allowlist before rendering. */
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { commerceApi } from '@/api/services'
 import PageState from '@/shared/PageState.vue'
-import { money, periods } from '@/shared/format'
+import { date, money, periods } from '@/shared/format'
+import { parsePlanFeatures } from '@/shared/catalog'
 import { renderRichText } from '@/shared/rich-text'
 
 const router = useRouter()
+const route = useRoute()
 const loading = ref(true)
 const error = ref('')
 const plans = ref<any[]>([])
 const selected = ref<any>(null)
 const period = ref('month_price')
-const coupon = ref('')
+const coupon = ref(String(route.query.coupon || ''))
+const checkedCoupon = ref<any>(null)
+const couponChecking = ref(false)
+const couponError = ref('')
 const submitting = ref(false)
 
 async function load() {
@@ -31,6 +36,18 @@ const prices = computed(() => selected.value
 watch(selected, (plan) => {
   if (plan && !prices.value.some(([key]) => key === period.value)) period.value = String(prices.value[0]?.[0] || '')
 })
+watch([selected, period, coupon], () => {
+  checkedCoupon.value = null
+  couponError.value = ''
+})
+
+const selectedPrice = computed(() => Number(selected.value?.[period.value] || 0))
+const couponDiscount = computed(() => {
+  if (!checkedCoupon.value) return 0
+  const value = Number(checkedCoupon.value.value || 0)
+  const discount = Number(checkedCoupon.value.type) === 2 ? Math.floor(selectedPrice.value * value / 100) : value
+  return Math.min(selectedPrice.value, Math.max(0, discount))
+})
 
 function planTraffic(plan: any): string {
   const value = Number(plan?.transfer_enable || 0)
@@ -47,12 +64,31 @@ function planFeatures(plan: any): string[] {
   ]
 }
 
+async function checkCoupon(): Promise<boolean> {
+  const code = coupon.value.trim()
+  if (!selected.value || !period.value || !code) return false
+  couponChecking.value = true
+  couponError.value = ''
+  try {
+    checkedCoupon.value = await commerceApi.coupon({ code, plan_id: selected.value.id, period: period.value })
+    return true
+  } catch (e: any) {
+    checkedCoupon.value = null
+    couponError.value = e.message
+    return false
+  } finally {
+    couponChecking.value = false
+  }
+}
+
 async function create(manual = false) {
   if (!selected.value || !period.value) return
+  const code = coupon.value.trim()
+  if (code && checkedCoupon.value?.code !== code && !(await checkCoupon())) return
   submitting.value = true
   error.value = ''
   try {
-    const tradeNo = await commerceApi.createOrder({ plan_id: selected.value.id, period: period.value, coupon_code: coupon.value || undefined })
+    const tradeNo = await commerceApi.createOrder({ plan_id: selected.value.id, period: period.value, coupon_code: checkedCoupon.value?.code || undefined })
     const id = typeof tradeNo === 'string' ? tradeNo : tradeNo?.trade_no
     if (!id) throw new Error('订单号缺失')
     if (manual) await commerceApi.manualSubmit(id)
@@ -73,7 +109,9 @@ async function create(manual = false) {
         <h2>{{ plan.name }}</h2>
         <strong>{{ money(plan.month_price) }}<small>/ 月</small></strong>
         <p>{{ planTraffic(plan) }} 流量</p>
-        <ul><li v-for="feature in planFeatures(plan)" :key="feature">{{ feature }}</li></ul>
+        <ul v-if="parsePlanFeatures(plan.content).length" class="plan-content-features"><li v-for="feature in parsePlanFeatures(plan.content)" :key="feature.feature" :class="{ unsupported: !feature.support }">{{ feature.support ? '✓' : '×' }} {{ feature.feature }}</li></ul>
+        <div v-else-if="plan.content" class="plan-card-content knowledge-body" v-html="renderRichText(plan.content, plan.name)"/>
+        <ul v-else><li v-for="feature in planFeatures(plan)" :key="feature">{{ feature }}</li></ul>
         <button class="button" :class="selected?.id === plan.id ? 'primary' : 'secondary'">{{ selected?.id === plan.id ? '已选择' : '选择套餐' }}</button>
       </article>
     </div>
@@ -81,9 +119,12 @@ async function create(manual = false) {
       <section class="modal plan-modal">
         <header><div><h2>配置订阅</h2><p>{{ selected.name }}</p></div><button class="icon-button" @click="selected = null">×</button></header>
         <div class="plan-modal-summary"><span>{{ planTraffic(selected) }}</span><span>{{ selected.speed_limit ? `${selected.speed_limit} Mbps` : '不限速' }}</span><span>{{ selected.device_limit ? `${selected.device_limit} 台设备` : '不限设备' }}</span></div>
-        <div v-if="selected.content" class="plan-content knowledge-body" v-html="renderRichText(selected.content, selected.name)"/>
+        <ul v-if="parsePlanFeatures(selected.content).length" class="plan-content plan-content-features"><li v-for="feature in parsePlanFeatures(selected.content)" :key="feature.feature" :class="{ unsupported: !feature.support }">{{ feature.support ? '✓' : '×' }} {{ feature.feature }}</li></ul>
+        <div v-else-if="selected.content" class="plan-content knowledge-body" v-html="renderRichText(selected.content, selected.name)"/>
         <label>付款周期<select v-model="period"><option v-for="([key, label]) in prices" :key="key" :value="key">{{ label }} · {{ money(selected[key]) }}</option></select></label>
-        <label>优惠券（选填）<input v-model="coupon" placeholder="输入优惠码" /></label>
+        <label>优惠券（选填）<span class="copy-row"><input v-model.trim="coupon" placeholder="输入优惠码" /><button class="button secondary" type="button" :disabled="couponChecking || !coupon" @click="checkCoupon">{{ couponChecking ? '验证中' : '验证' }}</button></span></label>
+        <div v-if="checkedCoupon" class="coupon-preview"><div><strong>{{ checkedCoupon.name || '优惠券有效' }}</strong><p>减免 {{ money(couponDiscount) }}，优惠后 {{ money(selectedPrice - couponDiscount) }} · 有效期至 {{ date(checkedCoupon.ended_at) }}</p></div></div>
+        <p v-if="couponError" class="form-message error">{{ couponError }}</p>
         <p v-if="error" class="form-message error">{{ error }}</p>
         <footer><button class="button secondary" :disabled="submitting" @click="create(true)">人工提交订单</button><button class="button primary" :disabled="submitting" @click="create(false)">{{ submitting ? '正在提交' : '下单' }}</button></footer>
       </section>

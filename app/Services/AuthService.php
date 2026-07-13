@@ -67,7 +67,7 @@ class AuthService
                 'created_at' => $token->created_at->timestamp,
                 'current' => $currentToken instanceof PersonalAccessToken && $currentToken->id === $token->id,
             ];
-        })->all();
+        })->sortByDesc('current')->unique(fn(array $session): string => $session['ip'] ?: 'session:' . $session['id'])->values()->all();
     }
 
     public function removeSession(string $sessionId): bool

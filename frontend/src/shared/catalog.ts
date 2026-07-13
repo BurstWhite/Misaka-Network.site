@@ -21,6 +21,11 @@ export interface PublicPlan {
   capacity_limit?: number | string | null
 }
 
+export interface PlanContentFeature {
+  feature: string
+  support: boolean
+}
+
 export function extractRows<T>(value: unknown): T[] {
   if (Array.isArray(value)) return value as T[]
   if (value && typeof value === 'object' && Array.isArray((value as { data?: unknown }).data)) {
@@ -45,4 +50,17 @@ export function stripMarkup(value: unknown): string {
     .replace(/<[^>]*>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+export function parsePlanFeatures(value: unknown): PlanContentFeature[] {
+  if (typeof value !== 'string') return []
+  try {
+    const rows = JSON.parse(value)
+    if (!Array.isArray(rows)) return []
+    return rows
+      .filter((row): row is { feature: unknown, support?: unknown } => row && typeof row === 'object' && String(row.feature || '').trim().length > 0)
+      .map((row) => ({ feature: String(row.feature).trim(), support: Boolean(row.support) }))
+  } catch {
+    return []
+  }
 }

@@ -41,7 +41,7 @@ function isSafeUrl(value: string | null, protocols: string[]): boolean {
 export function renderRichText(value: unknown, title = ''): string {
   let html = String(value || '').replace(/\r\n?/g, '\n').trim()
   if (title) html = html.replace(new RegExp(`^#\\s+${title.replace(/[.*+?^${}()|[\]\\\\]/g, '\\\\$&')}\\s*\\n?`, 'i'), '')
-  html = html.replace(/^###\s+(.+)$/gm, '<h4>$1</h4>').replace(/^##\s+(.+)$/gm, '<h3>$1</h3>').replace(/^#\s+(.+)$/gm, '<h2>$1</h2>')
+  html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>').replace(/^###\s+(.+)$/gm, '<h4>$1</h4>').replace(/^##\s+(.+)$/gm, '<h3>$1</h3>').replace(/^#\s+(.+)$/gm, '<h2>$1</h2>')
   html = html.replace(/^```(?:\w+)?\n([\s\S]*?)\n```$/gm, '<pre><code>$1</code></pre>').replace(/^---$/gm, '<hr>')
   html = html.replace(/((?:^\|.*\|(?:\n|$)){2,})/gm, (table) => {
     const rows = table.trim().split('\n').map((row) => row.replace(/^\||\|$/g, '').split('|').map((cell) => cell.trim()))

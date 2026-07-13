@@ -76,6 +76,8 @@ a,
 
 .traffic-hit-area { fill: transparent; stroke: none; outline: none; }
 .traffic-point:focus-within .traffic-node { stroke: var(--tooltip-accent); }
+.usage-chart { display: block; width: 100%; height: auto; aspect-ratio: 680 / 150; }
+.traffic-chart { display: block; width: 100%; height: auto; aspect-ratio: 680 / 156; }
 
 .traffic-axis {
   display: grid;
@@ -430,6 +432,13 @@ a,
 .plan-modal-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
 .plan-modal-summary span { padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-soft); color: var(--muted); font-size: 11px; text-align: center; }
 .plan-modal .plan-content { max-height: 34dvh; overflow: auto; margin: 0 0 14px; padding: 13px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-soft); font-size: 12px; }
+.plan-card { display: flex; flex-direction: column; }
+.plan-card-content { flex: 1; margin: 14px 0; font-size: 12px; }
+.plan-card-content h4:first-child { margin-top: 0; }
+.plan-card > .button { margin-top: auto; }
+.plan-content-features .unsupported { opacity: .5; }
+.coupon-preview { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 18px; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-soft); }
+.coupon-preview p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
 
 .plan-details .plan-content { max-height: 260px; overflow: auto; white-space: normal; }
 .client-import { min-width: 0; min-height: 84px; overflow: hidden; padding: 26px 10px 12px; border-color: color-mix(in srgb, var(--border) 88%, var(--accent)); }
