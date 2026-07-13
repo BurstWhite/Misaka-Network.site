@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/** @property-read User|null $invitedUser */
+
 class CommissionLog extends Model
 {
     protected $table = 'v2_commission_log';

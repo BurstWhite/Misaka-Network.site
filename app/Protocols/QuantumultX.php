@@ -80,7 +80,7 @@ class QuantumultX extends AbstractProtocol
 
         self::applyCommonSettings($config, $server);
 
-        return implode(',', array_filter($config)) . "\r\n";
+        return implode(',', $config) . "\r\n";
     }
 
     public static function buildVmess($uuid, $server)
@@ -96,7 +96,7 @@ class QuantumultX extends AbstractProtocol
         self::applyTransportSettings($config, $protocol_settings);
         self::applyCommonSettings($config, $server);
 
-        return implode(',', array_filter($config)) . "\r\n";
+        return implode(',', $config) . "\r\n";
     }
 
     public static function buildVless($uuid, $server)
@@ -223,7 +223,7 @@ class QuantumultX extends AbstractProtocol
             $config[] = "tls-host=$serverName";
         }
 
-        return implode(',', array_filter($config)) . "\r\n";
+        return implode(',', $config) . "\r\n";
     }
 
     public static function buildSocks5($password, $server)

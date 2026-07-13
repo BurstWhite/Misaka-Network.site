@@ -15,7 +15,7 @@ class AuthLogin extends FormRequest
     {
         return [
             'email' => 'required|email:strict',
-            'password' => 'required|min:6'
+            'password' => 'required|string'
         ];
     }
 
@@ -25,7 +25,7 @@ class AuthLogin extends FormRequest
             'email.required' => __('Email can not be empty'),
             'email.email' => __('Email format is incorrect'),
             'password.required' => __('Password can not be empty'),
-            'password.min' => __('Password must be greater than 6 digits')
+            'password.string' => __('Password format is incorrect')
         ];
     }
 }

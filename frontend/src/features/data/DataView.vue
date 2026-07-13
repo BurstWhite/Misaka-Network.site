@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* eslint-disable vue/no-v-html -- renderRichText applies a strict DOM allowlist before rendering. */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { serviceApi } from '@/api/services'
@@ -187,17 +188,51 @@ function serverCode(server: any) {
   return match?.[1]?.toUpperCase() || String(server?.type || 'NODE').slice(0, 4).toUpperCase()
 }
 
-function tags(value: unknown): string[] { return Array.isArray(value) ? value : String(value || '').split(',').filter(Boolean) }
 function openKnowledge(item: any, event: MouseEvent) {
   knowledgeOpener = event.currentTarget as HTMLElement
   selectedKnowledge.value = item
 }
 function closeKnowledge() { selectedKnowledge.value = null }
 function sanitizeHtml(value: string): string {
-  return value.replace(/<\/?(script|style|iframe|object|embed|form)[^>]*>[\s\S]*?<\/?\1>/gi, '').replace(/\son\w+=("[^"]*"|'[^']*'|[^\s>]+)/gi, '').replace(/(href|src)\s*=\s*(['"])\s*javascript:[\s\S]*?\2/gi, '$1="#"')
+  const allowedTags = new Set(['A', 'BR', 'CODE', 'H2', 'H3', 'H4', 'HR', 'IMG', 'LI', 'P', 'PRE', 'STRONG', 'TABLE', 'TBODY', 'TD', 'TH', 'THEAD', 'TR', 'UL'])
+  const blockedTags = new Set(['EMBED', 'FORM', 'IFRAME', 'MATH', 'OBJECT', 'SCRIPT', 'STYLE', 'SVG'])
+  const template = document.createElement('template')
+  template.innerHTML = value
+
+  for (const element of Array.from(template.content.querySelectorAll('*'))) {
+    if (blockedTags.has(element.tagName)) {
+      element.remove()
+      continue
+    }
+    if (!allowedTags.has(element.tagName)) {
+      element.replaceWith(...Array.from(element.childNodes))
+      continue
+    }
+
+    for (const attribute of Array.from(element.attributes)) {
+      const allowed = (element.tagName === 'A' && ['href', 'title'].includes(attribute.name))
+        || (element.tagName === 'IMG' && ['alt', 'src', 'title'].includes(attribute.name))
+      if (!allowed) element.removeAttribute(attribute.name)
+    }
+
+    if (element instanceof HTMLAnchorElement) {
+      if (!isSafeUrl(element.getAttribute('href'), ['http:', 'https:', 'mailto:'])) element.removeAttribute('href')
+      element.target = '_blank'
+      element.rel = 'noopener noreferrer'
+    }
+    if (element instanceof HTMLImageElement && !isSafeUrl(element.getAttribute('src'), ['http:', 'https:'])) {
+      element.removeAttribute('src')
+    }
+  }
+
+  return template.innerHTML
+}
+function isSafeUrl(value: string | null, protocols: string[]): boolean {
+  if (!value) return false
+  try { return protocols.includes(new URL(value, window.location.origin).protocol) } catch { return false }
 }
 function renderRichText(value: unknown, title = ''): string {
-  let html = sanitizeHtml(String(value || '').replace(/\r\n?/g, '\n')).trim()
+  let html = String(value || '').replace(/\r\n?/g, '\n').trim()
   if (title) html = html.replace(new RegExp(`^#\\s+${title.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\s*\\n?`, 'i'), '')
   html = html.replace(/^###\s+(.+)$/gm, '<h4>$1</h4>').replace(/^##\s+(.+)$/gm, '<h3>$1</h3>').replace(/^#\s+(.+)$/gm, '<h2>$1</h2>')
   html = html.replace(/^```(?:\w+)?\n([\s\S]*?)\n```$/gm, '<pre><code>$1</code></pre>').replace(/^---$/gm, '<hr>')
@@ -211,7 +246,8 @@ function renderRichText(value: unknown, title = ''): string {
   html = html.replace(/^\s*[-*]\s+(.+)$/gm, '<li>$1</li>').replace(/(?:<li>[\s\S]*?<\/li>\s*)+/g, (list) => `<ul>${list}</ul>`)
   html = html.replace(/!\[([^\]]*)\]\(([^\s)]+)(?:\s+"[^"]*")?\)/g, '<img alt="$1" src="$2">').replace(/\[([^\]]+)\]\(([^\s)]+)(?:\s+"[^"]*")?\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>')
-  return html.split(/\n{2,}/).map((block) => /^<(h[234]|ul|pre|hr|img)/i.test(block.trim()) ? block : `<p>${block.replace(/\n/g, '<br>')}</p>`).join('')
+  html = html.split(/\n{2,}/).map((block) => /^<(h[234]|ul|pre|hr|img)/i.test(block.trim()) ? block : `<p>${block.replace(/\n/g, '<br>')}</p>`).join('')
+  return sanitizeHtml(html)
 }
 </script>
 
@@ -253,7 +289,7 @@ function renderRichText(value: unknown, title = ''): string {
       <div v-if="selectedServer" class="dashboard-node-body">
         <div class="dashboard-node-list">
           <button v-for="server in rows" :key="server.id" type="button" :class="['dashboard-node-item', { active: String(server.id) === String(selectedServer.id) }]" @click="selectedServerId = server.id">
-            <span class="dashboard-node-code">{{ serverCode(server) }}</span><span><strong>{{ server.name }}</strong><small>{{ server.type || '-' }} · {{ serverStatus(server).label }}</small></span><em :class="serverStatus(server).key">{{ Number(server.rate || 1).toFixed(1) }}×</em>
+            <span class="dashboard-node-code">{{ serverCode(server) }}</span><span><strong>{{ server.name }}</strong><small>{{ server.type || '-' }} · {{ serverStatus(server).label }}</small></span><em :class="['node-status', serverStatus(server).key]">{{ Number(server.rate || 1).toFixed(1) }}×</em>
           </button>
         </div>
         <div class="dashboard-node-detail">

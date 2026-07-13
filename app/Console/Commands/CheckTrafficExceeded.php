@@ -15,12 +15,13 @@ class CheckTrafficExceeded extends Command
 
     public function handle()
     {
-        $count = Redis::scard('traffic:pending_check');
+        $count = (int) Redis::scard('traffic:pending_check');
         if ($count <= 0) {
             return;
         }
 
-        $pendingUserIds = array_map('intval', Redis::spop('traffic:pending_check', $count));
+        $pending = Redis::spop('traffic:pending_check', $count);
+        $pendingUserIds = array_map('intval', is_array($pending) ? $pending : [$pending]);
 
         $exceededUsers = User::toBase()
             ->whereIn('id', $pendingUserIds)

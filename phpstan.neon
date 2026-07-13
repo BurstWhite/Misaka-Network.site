@@ -10,6 +10,11 @@ parameters:
     # Level 10 is the highest level
     level: 5
 
+    treatPhpDocTypesAsCertain: false
+
+    universalObjectCratesClasses:
+        - Workerman\Connection\TcpConnection
+
     ignoreErrors:
         - '#Negated boolean expression is always false\.#'
 

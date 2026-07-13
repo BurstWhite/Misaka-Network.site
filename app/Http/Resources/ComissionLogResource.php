@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\CommissionLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -20,11 +21,20 @@ class ComissionLogResource extends JsonResource
             "trade_no" => $this['trade_no'],
             "get_amount" => $this['get_amount'],
             "created_at" => $this['created_at'],
-            "invited_user" => $this->whenLoaded('invitedUser', fn () => [
-                'email' => $this->maskEmail($this->invitedUser?->email),
-                'invite_code' => $this->invitedUser?->invite_code,
-                'joined_at' => $this->invitedUser?->created_at,
-            ])
+            "invited_user" => $this->whenLoaded('invitedUser', fn () => $this->invitedUserData())
+        ];
+    }
+
+    private function invitedUserData(): array
+    {
+        /** @var CommissionLog $log */
+        $log = $this->resource;
+        $user = $log->invitedUser;
+
+        return [
+            'email' => $this->maskEmail($user?->email),
+            'invite_code' => $user?->invite_code,
+            'joined_at' => $user?->created_at,
         ];
     }
 

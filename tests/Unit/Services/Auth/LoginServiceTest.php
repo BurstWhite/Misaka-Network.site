@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services\Auth;
 
 use App\Models\User;
+use App\Http\Requests\Passport\AuthLogin;
 use App\Services\Auth\LoginService;
 use App\Utils\CacheKey;
 use App\Utils\Helper;
@@ -67,6 +68,16 @@ class LoginServiceTest extends TestCase
 
         $this->assertTrue($validator->fails());
         $this->assertArrayHasKey('email_code', $validator->errors()->toArray());
+    }
+
+    public function test_login_validation_accepts_legacy_short_passwords(): void
+    {
+        $validator = Validator::make([
+            'email' => 'legacy@example.com',
+            'password' => 'legacy',
+        ], (new AuthLogin())->rules());
+
+        $this->assertFalse($validator->fails());
     }
 
     private function createUser(string $email, string $password): User

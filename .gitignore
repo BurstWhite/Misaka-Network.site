@@ -38,6 +38,7 @@ compose.yaml
 compose.host.yaml
 compose.split.yaml
 .scribe
+/.phpunit.cache/
 /.vscode/
 /database/seeders/LocalDemoSeeder.php
 /frontend/pnpm-workspace.yaml

@@ -20,7 +20,9 @@ class LinusPayPluginTest extends TestCase
             'private_key_type' => OPENSSL_KEYTYPE_RSA,
         ]);
 
-        openssl_pkey_export($keyPair, $this->privateKey);
+        $privateKey = '';
+        openssl_pkey_export($keyPair, $privateKey);
+        $this->privateKey = $privateKey;
         $this->publicKey = openssl_pkey_get_details($keyPair)['key'];
 
         $this->plugin = new Plugin('linus_pay');
