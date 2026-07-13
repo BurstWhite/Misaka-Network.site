@@ -1,11 +1,14 @@
 <script setup lang="ts">
+/* eslint-disable vue/no-v-html -- renderRichText applies a strict DOM allowlist before rendering. */
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { commerceApi, serviceApi, userApi } from '@/api/services'
 import PageState from '@/shared/PageState.vue'
 import Icon from '@/shared/Icon.vue'
+import NodeStatusLegend from '@/shared/NodeStatusLegend.vue'
 import { bytes, date, money, orderStatus } from '@/shared/format'
+import { renderRichText } from '@/shared/rich-text'
 import { aggregateTrafficByDay } from '@/shared/traffic'
 
 const { t } = useI18n()
@@ -111,16 +114,16 @@ const onlineServerCount = computed(() => servers.value.filter((server) => server
         <div class="dashboard-main">
           <section class="panel chart-panel">
             <header><div><h2>{{ t('dashboard.usage') }}</h2><p>悬浮折线节点查看当日用量</p></div><span>{{ trafficPoints.length }} 天</span></header>
-            <svg class="usage-chart" viewBox="0 0 680 150" preserveAspectRatio="none" role="img" aria-label="每日流量使用折线图" @mouseleave="chartHover = false">
+            <svg class="usage-chart" viewBox="0 0 680 150" role="img" aria-label="每日流量使用折线图" @mouseleave="chartHover = false">
               <defs><linearGradient id="dashboard-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1bb8d1" stop-opacity=".25"/><stop offset="1" stop-color="#1bb8d1" stop-opacity="0"/></linearGradient></defs>
               <line v-for="y in [35,70,105,140]" :key="y" x1="10" x2="670" :y1="y" :y2="y" stroke="var(--border)" stroke-dasharray="3 5"/>
               <path :d="chartArea" fill="url(#dashboard-area)"/><path :d="chartLine" fill="none" stroke="#13aeca" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
               <path v-if="trafficPoints.length > 1" class="chart-comet-trail" :d="chartLine" pathLength="700"/>
               <circle v-if="trafficPoints.length > 1" class="chart-comet-head" r="4"><animateMotion :path="chartLine" dur="3.2s" repeatCount="indefinite"/></circle>
-              <g v-for="(point, index) in trafficPoints" :key="point.key" class="traffic-point"><circle :cx="point.x" :cy="point.y" :r="index === chartFocus ? 6 : 4"/><circle :cx="point.x" :cy="point.y" r="15" fill="transparent" tabindex="0" :aria-label="`${date(point.timestamp)} ${bytes(point.amount)}`" @pointerenter="showChartPoint(index)" @mouseover="showChartPoint(index)" @focus="showChartPoint(index)"/></g>
+              <g v-for="(point, index) in trafficPoints" :key="point.key" class="traffic-point"><circle :cx="point.x" :cy="point.y" r="4"/><circle :cx="point.x" :cy="point.y" r="15" fill="transparent" tabindex="0" :aria-label="`${date(point.timestamp)} ${bytes(point.amount)}`" @pointerenter="showChartPoint(index)" @mouseover="showChartPoint(index)" @focus="showChartPoint(index)"/></g>
               <Transition name="chart-fade"><g v-if="chartHover && activeTraffic" class="chart-tooltip" :transform="chartTooltipTransform" pointer-events="none"><line class="chart-tooltip-guide" :x1="Number(activeTraffic.x) < 510 ? 0 : 164" :y1="Number(activeTraffic.y) < 62 ? 0 : 74" :x2="Number(activeTraffic.x) < 510 ? -14 : 176" :y2="Number(activeTraffic.y) < 62 ? -16 : 84"/><rect width="164" height="74" rx="10"/><text class="tooltip-date" x="12" y="18">{{ date(activeTraffic.timestamp) }}</text><text x="12" y="37">上传 {{ bytes(activeTraffic.u) }}</text><text x="12" y="53">下载 {{ bytes(activeTraffic.d) }}</text><text class="tooltip-total" x="12" y="69">总计 {{ bytes(activeTraffic.amount) }}</text></g></Transition>
             </svg>
-            <div class="traffic-axis" aria-hidden="true"><span v-for="point in trafficPoints" :key="point.key">{{ point.label }}</span></div>
+            <div class="traffic-axis" :style="{ gridTemplateColumns: `repeat(${trafficPoints.length}, minmax(0, 1fr))` }" aria-hidden="true"><span v-for="point in trafficPoints" :key="point.key">{{ point.label }}</span></div>
             <div class="chart-hint"><span v-if="trafficHasData">悬浮折线节点查看当日流量</span><span v-else>最近 7 天暂无流量记录</span></div>
           </section>
           <section class="panel"><header><h2>{{ t('dashboard.recentOrders') }}</h2><RouterLink to="/orders">{{ t('common.more') }}</RouterLink></header><div class="table-wrap"><table><thead><tr><th>订单号</th><th>套餐</th><th>金额</th><th>状态</th><th>创建时间</th></tr></thead><tbody><tr v-for="order in orders.slice(0, 4)" :key="order.trade_no"><td><RouterLink :to="`/order/${order.trade_no}`">#{{ order.trade_no }}</RouterLink></td><td>{{ order.plan?.name || order.plan_name || '-' }}</td><td>{{ money(order.total_amount ?? order.total) }}</td><td><span class="status success">{{ orderStatus(order.status) }}</span></td><td>{{ date(order.created_at, true) }}</td></tr><tr v-if="!orders.length"><td colspan="5" class="empty-cell">{{ t('common.empty') }}</td></tr></tbody></table></div></section>
@@ -128,7 +131,7 @@ const onlineServerCount = computed(() => servers.value.filter((server) => server
         <aside class="panel notice-panel"><header><h2>{{ t('dashboard.notices') }}</h2><span>{{ notices.length }}</span></header><button v-for="notice in notices.slice(0, 6)" :key="notice.id" type="button" class="notice-item" @click="openNotice(notice)"><i/><div><strong>{{ notice.title }}</strong><time>{{ date(notice.created_at, true) }}</time></div><Icon name="chevron"/></button><p v-if="!notices.length" class="page-state">{{ t('common.empty') }}</p></aside>
       </div>
       <section class="panel dashboard-node-panel dashboard-node-table-panel">
-        <header><div><h2>节点状态</h2><p>实时查看可用节点与最近心跳</p></div><div class="dashboard-node-summary"><span class="session-online"/>{{ onlineServerCount }} / {{ servers.length }} 在线<RouterLink to="/servers">查看全部</RouterLink></div></header>
+        <header><div><h2>节点状态</h2><p>实时查看可用节点与最近心跳</p></div><div class="dashboard-node-summary"><NodeStatusLegend/>{{ onlineServerCount }} / {{ servers.length }} 在线<RouterLink to="/servers">查看全部</RouterLink></div></header>
         <div class="table-wrap">
           <table class="server-table">
             <thead><tr><th>节点</th><th>协议</th><th>倍率</th><th>状态</th><th>最后检查</th></tr></thead>
@@ -145,7 +148,7 @@ const onlineServerCount = computed(() => servers.value.filter((server) => server
       <article class="modal notice-modal" role="dialog" aria-modal="true" aria-labelledby="notice-modal-title">
         <header><div><span class="notice-modal-kicker">公告详情</span><h2 id="notice-modal-title">{{ selectedNotice.title }}</h2><p>{{ date(selectedNotice.created_at, true) }}</p></div><button class="icon-button" type="button" aria-label="关闭公告" @click="closeNotice"><Icon name="x"/></button></header>
         <div v-if="noticeTags(selectedNotice).length" class="notice-modal-tags"><span v-for="tag in noticeTags(selectedNotice)" :key="tag">{{ tag }}</span></div>
-        <div class="notice-modal-body">{{ selectedNotice.content || selectedNotice.body || selectedNotice.message || '暂无公告内容' }}</div>
+        <div class="notice-modal-body knowledge-body" v-html="renderRichText(selectedNotice.content || selectedNotice.body || selectedNotice.message || '暂无公告内容', selectedNotice.title)"/>
         <footer><button class="button primary" type="button" @click="closeNotice">知道了</button></footer>
       </article>
     </div>

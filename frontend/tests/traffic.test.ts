@@ -16,6 +16,7 @@ describe('aggregateTrafficByDay', () => {
     expect(result[0].key).toBe('2026-07-07')
     expect(result[4]).toMatchObject({ key: '2026-07-11', u: 10, d: 5, amount: 15 })
     expect(result[6]).toMatchObject({ key: '2026-07-13', u: 6, d: 4, amount: 10 })
+    expect(result[6].label).toBe('7.13')
   })
 
   it('fills days without records with zeroes and ignores invalid or out-of-range records', () => {

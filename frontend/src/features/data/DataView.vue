@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import { serviceApi } from '@/api/services'
 import PageState from '@/shared/PageState.vue'
 import Icon from '@/shared/Icon.vue'
+import NodeStatusLegend from '@/shared/NodeStatusLegend.vue'
 import { bytes, date, money } from '@/shared/format'
 import { aggregateTrafficByDay } from '@/shared/traffic'
 
@@ -32,7 +33,7 @@ const kind = computed(() => String(route.meta.kind))
 
 const meta: Record<string, [string, string]> = {
   invite: ['我的邀请', '生成邀请码，点击邀请码查看对应的被邀请人信息与返佣记录。'],
-  traffic: ['流量明细', '按日期查看最近 7 天的上传、下载与总用量。'],
+  traffic: ['流量明细', '按日期查看近 14 天的上传、下载与总用量。'],
   servers: ['节点状态', '实时查看可用节点、倍率与最近心跳。'],
   knowledge: ['使用文档', '客户端配置、订阅导入与常见问题。'],
   gifts: ['礼品卡', '兑换礼品卡并查看历史记录。'],
@@ -40,7 +41,7 @@ const meta: Record<string, [string, string]> = {
 
 const loaders: Record<string, () => Promise<any>> = {
   invite: serviceApi.invites,
-  traffic: () => serviceApi.traffic({ days: 7 }),
+  traffic: () => serviceApi.traffic({ days: 14 }),
   servers: serviceApi.servers,
   knowledge: () => serviceApi.knowledge({ keyword: knowledgeKeyword.value.trim() || undefined }),
   gifts: serviceApi.giftHistory,
@@ -154,7 +155,7 @@ const selectedServer = computed(() => rows.value.find((server) => String(server.
 const onlineServerCount = computed(() => rows.value.filter((server) => serverStatus(server).key === 'online').length)
 
 const inviteStats = computed(() => data.value?.stat || [])
-const trafficRows = computed(() => aggregateTrafficByDay(rows.value, 7))
+const trafficRows = computed(() => aggregateTrafficByDay(rows.value, 14))
 const trafficMax = computed(() => Math.max(1, ...trafficRows.value.map((item) => item.amount)))
 const trafficTotal = computed(() => trafficRows.value.reduce((sum, item) => sum + item.amount, 0))
 const trafficHasData = computed(() => trafficRows.value.some((item) => item.amount > 0))
@@ -273,7 +274,7 @@ function renderRichText(value: unknown, title = ''): string {
     <p v-if="message" class="form-message success">{{ message }}</p>
 
     <section v-if="kind === 'traffic'" class="panel traffic-panel">
-      <header><div><h2>每日流量趋势</h2><p>最近 7 天，按日汇总上传、下载与总用量</p></div><span class="traffic-total"><Icon name="chart" :size="17" /> {{ bytes(trafficTotal) }}</span></header>
+      <header><div><h2>每日流量趋势</h2><p>最近 14 天，按日汇总上传、下载与总用量</p></div><span class="traffic-total"><Icon name="chart" :size="17" /> {{ bytes(trafficTotal) }}</span></header>
       <div v-if="trafficHasData" class="traffic-chart-wrap">
         <svg class="traffic-chart" viewBox="0 0 680 156" role="img" aria-label="每日流量折线图" @mouseleave="chartHover = false">
           <defs><linearGradient id="traffic-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3155ee" stop-opacity=".28"/><stop offset="1" stop-color="#3155ee" stop-opacity="0"/></linearGradient></defs>
@@ -283,21 +284,21 @@ function renderRichText(value: unknown, title = ''): string {
           <path v-if="chartPoints.length > 1" class="chart-comet-trail" :d="chartLine" pathLength="700"/>
           <circle v-if="chartPoints.length > 1" class="chart-comet-head" r="4"><animateMotion :path="chartLine" dur="3.2s" repeatCount="indefinite"/></circle>
           <g v-for="(point, index) in chartPoints" :key="point.key" class="traffic-point">
-            <circle :cx="point.x" :cy="point.y" :r="index === chartFocus ? 6 : 4"/>
+            <circle :cx="point.x" :cy="point.y" r="4"/>
             <circle :cx="point.x" :cy="point.y" r="15" fill="transparent" tabindex="0" :aria-label="`${date(point.timestamp)} ${bytes(point.amount)}`" @pointerenter="showChartPoint(index)" @mouseover="showChartPoint(index)" @focus="showChartPoint(index)"/>
           </g>
           <Transition name="chart-fade"><g v-if="chartHover && activeTraffic" class="chart-tooltip" :transform="chartTooltipTransform" pointer-events="none">
             <line class="chart-tooltip-guide" :x1="Number(activeTraffic.x) < 510 ? 0 : 164" :y1="Number(activeTraffic.y) < 62 ? 0 : 74" :x2="Number(activeTraffic.x) < 510 ? -14 : 176" :y2="Number(activeTraffic.y) < 62 ? -16 : 84"/><rect width="164" height="74" rx="10"/><text class="tooltip-date" x="12" y="18">{{ date(activeTraffic.timestamp) }}</text><text x="12" y="37">上传 {{ bytes(activeTraffic.u) }}</text><text x="12" y="53">下载 {{ bytes(activeTraffic.d) }}</text><text class="tooltip-total" x="12" y="69">总计 {{ bytes(activeTraffic.amount) }}</text>
           </g></Transition>
         </svg>
-        <div class="traffic-axis" aria-hidden="true"><span v-for="day in trafficRows" :key="day.key">{{ day.label }}</span></div>
+        <div class="traffic-axis" :style="{ gridTemplateColumns: `repeat(${trafficRows.length}, minmax(0, 1fr))` }" aria-hidden="true"><span v-for="day in trafficRows" :key="day.key">{{ day.label }}</span></div>
         <div class="chart-hint">悬浮折线节点查看当日流量</div>
       </div>
-      <div v-else class="page-state">最近 7 天暂无流量记录</div>
+      <div v-else class="page-state">最近 14 天暂无流量记录</div>
     </section>
 
     <section v-else-if="kind === 'servers'" class="panel dashboard-node-panel server-directory-panel">
-      <header><div><h2>节点状态</h2><p>实时查看当前线路与可用节点</p></div><div class="dashboard-node-summary"><span class="session-online"/>{{ onlineServerCount }} / {{ rows.length }} 在线</div></header>
+      <header><div><h2>节点状态</h2><p>实时查看当前线路与可用节点</p></div><div class="dashboard-node-summary"><NodeStatusLegend/>{{ onlineServerCount }} / {{ rows.length }} 在线</div></header>
       <div v-if="selectedServer" class="dashboard-node-body">
         <div class="dashboard-node-list">
           <button v-for="server in rows" :key="server.id" type="button" :class="['dashboard-node-item', { active: String(server.id) === String(selectedServer.id) }]" @click="selectedServerId = server.id">

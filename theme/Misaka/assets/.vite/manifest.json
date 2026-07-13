@@ -13,6 +13,10 @@
       "_vendor-EiMI0qIC.js"
     ]
   },
+  "__plugin-vue_export-helper-DlAUqK2U.js": {
+    "file": "chunks/_plugin-vue_export-helper-DlAUqK2U.js",
+    "name": "_plugin-vue_export-helper"
+  },
   "_auth-BPxhXt_0.js": {
     "file": "chunks/auth-BPxhXt_0.js",
     "name": "auth",
@@ -21,10 +25,6 @@
       "_services-D_kNpsZB.js",
       "src/main.ts"
     ]
-  },
-  "_catalog-B2SJkYD7.js": {
-    "file": "chunks/catalog-B2SJkYD7.js",
-    "name": "catalog"
   },
   "_format-B6zhn8uR.js": {
     "file": "chunks/format-B6zhn8uR.js",
@@ -44,6 +44,10 @@
       "_vendor-EiMI0qIC.js"
     ]
   },
+  "_rich-text-D4TJyW1v.js": {
+    "file": "chunks/rich-text-D4TJyW1v.js",
+    "name": "rich-text"
+  },
   "_services-D_kNpsZB.js": {
     "file": "chunks/services-D_kNpsZB.js",
     "name": "services",
@@ -52,9 +56,13 @@
       "src/main.ts"
     ]
   },
-  "_traffic-GqQujAz3.js": {
-    "file": "chunks/traffic-GqQujAz3.js",
-    "name": "traffic"
+  "_traffic-DlGHCsP_.js": {
+    "file": "chunks/traffic-DlGHCsP_.js",
+    "name": "traffic",
+    "imports": [
+      "__plugin-vue_export-helper-DlAUqK2U.js",
+      "_vendor-EiMI0qIC.js"
+    ]
   },
   "_vendor-EiMI0qIC.js": {
     "file": "chunks/vendor-EiMI0qIC.js",
@@ -75,7 +83,7 @@
     ]
   },
   "src/features/dashboard/DashboardView.vue": {
-    "file": "chunks/DashboardView-BvbfUqjX.js",
+    "file": "chunks/DashboardView-B8Wwiqho.js",
     "name": "DashboardView",
     "src": "src/features/dashboard/DashboardView.vue",
     "isDynamicEntry": true,
@@ -85,14 +93,16 @@
       "_services-D_kNpsZB.js",
       "_PageState.vue_vue_type_script_setup_true_lang-cDg2CEXo.js",
       "_Icon.vue_vue_type_script_setup_true_lang-DIs4xjtt.js",
+      "_traffic-DlGHCsP_.js",
       "_format-B6zhn8uR.js",
-      "_traffic-GqQujAz3.js",
+      "_rich-text-D4TJyW1v.js",
       "_http-Dq7h7Pqt.js",
-      "src/main.ts"
+      "src/main.ts",
+      "__plugin-vue_export-helper-DlAUqK2U.js"
     ]
   },
   "src/features/data/DataView.vue": {
-    "file": "chunks/DataView-CLl3sbkg.js",
+    "file": "chunks/DataView-BlGrXFsS.js",
     "name": "DataView",
     "src": "src/features/data/DataView.vue",
     "isDynamicEntry": true,
@@ -101,15 +111,16 @@
       "_services-D_kNpsZB.js",
       "_PageState.vue_vue_type_script_setup_true_lang-cDg2CEXo.js",
       "_Icon.vue_vue_type_script_setup_true_lang-DIs4xjtt.js",
+      "_traffic-DlGHCsP_.js",
       "_format-B6zhn8uR.js",
-      "_traffic-GqQujAz3.js",
       "_http-Dq7h7Pqt.js",
       "src/main.ts",
-      "_i18n-eim21RHN.js"
+      "_i18n-eim21RHN.js",
+      "__plugin-vue_export-helper-DlAUqK2U.js"
     ]
   },
   "src/features/landing/LandingView.vue": {
-    "file": "chunks/LandingView-Ci2fFk9w.js",
+    "file": "chunks/LandingView-BbQvJ8G8.js",
     "name": "LandingView",
     "src": "src/features/landing/LandingView.vue",
     "isDynamicEntry": true,
@@ -119,7 +130,7 @@
       "src/main.ts",
       "_Icon.vue_vue_type_script_setup_true_lang-DIs4xjtt.js",
       "_format-B6zhn8uR.js",
-      "_catalog-B2SJkYD7.js",
+      "__plugin-vue_export-helper-DlAUqK2U.js",
       "_http-Dq7h7Pqt.js",
       "_i18n-eim21RHN.js"
     ],
@@ -159,7 +170,7 @@
     ]
   },
   "src/features/plans/PlansView.vue": {
-    "file": "chunks/PlansView-DOdYh8kT.js",
+    "file": "chunks/PlansView-D3fR4Uez.js",
     "name": "PlansView",
     "src": "src/features/plans/PlansView.vue",
     "isDynamicEntry": true,
@@ -168,14 +179,14 @@
       "_services-D_kNpsZB.js",
       "_PageState.vue_vue_type_script_setup_true_lang-cDg2CEXo.js",
       "_format-B6zhn8uR.js",
-      "_catalog-B2SJkYD7.js",
+      "_rich-text-D4TJyW1v.js",
       "_http-Dq7h7Pqt.js",
       "src/main.ts",
       "_i18n-eim21RHN.js"
     ]
   },
   "src/features/profile/ProfileView.vue": {
-    "file": "chunks/ProfileView-BhUiQoBO.js",
+    "file": "chunks/ProfileView-DG_69A46.js",
     "name": "ProfileView",
     "src": "src/features/profile/ProfileView.vue",
     "isDynamicEntry": true,
@@ -191,7 +202,7 @@
     ]
   },
   "src/features/subscription/SubscriptionView.vue": {
-    "file": "chunks/SubscriptionView-a9aT4Wfw.js",
+    "file": "chunks/SubscriptionView-yx5JXhfy.js",
     "name": "SubscriptionView",
     "src": "src/features/subscription/SubscriptionView.vue",
     "isDynamicEntry": true,
@@ -200,6 +211,7 @@
       "_PageState.vue_vue_type_script_setup_true_lang-cDg2CEXo.js",
       "_Icon.vue_vue_type_script_setup_true_lang-DIs4xjtt.js",
       "_format-B6zhn8uR.js",
+      "_rich-text-D4TJyW1v.js",
       "_vendor-EiMI0qIC.js",
       "_http-Dq7h7Pqt.js",
       "src/main.ts",

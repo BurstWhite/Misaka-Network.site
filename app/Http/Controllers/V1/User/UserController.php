@@ -34,7 +34,7 @@ class UserController extends Controller
     {
         $user = $request->user();
         $authService = new AuthService($user);
-        return $this->success($authService->getSessions());
+        return $this->success($authService->getSessions($request));
     }
 
     public function removeActiveSession(Request $request)
