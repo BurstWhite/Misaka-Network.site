@@ -87,13 +87,17 @@ Route::get('/', function (Request $request) {
         }
 
         $themeConfig = $themeService->getConfig($theme) ?? [];
+        $runtimeVersion = app(UpdateService::class)->getCurrentVersion();
+        if (str_ends_with($runtimeVersion, '-unknown')) {
+            $runtimeVersion = (string) config('app.version', $runtimeVersion);
+        }
         $runtimeConfig = [
             'apiBase' => '/api/v1',
             'assetsBase' => "/theme/{$theme}/assets",
             'appName' => admin_setting('app_name', 'Xboard'),
             'description' => admin_setting('app_description', 'Xboard is best'),
             'logo' => admin_setting('logo'),
-            'version' => app(UpdateService::class)->getCurrentVersion(),
+            'version' => $runtimeVersion,
             'supportedLocales' => ['zh-CN', 'zh-TW', 'en-US', 'ja-JP', 'vi-VN', 'ko-KR', 'ru-RU', 'fa-IR'],
             'theme' => [
                 'primaryColor' => $themeConfig['primary_color'] ?? '#3155ee',
