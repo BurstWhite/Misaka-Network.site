@@ -65,6 +65,10 @@ export function displayRate(rate: PublicNode['rate']): string {
 export function stripMarkup(value: unknown): string {
   return String(value || '')
     .replace(/<[^>]*>/g, ' ')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/^\s{0,3}(?:#{1,6}|[-*+]|\d+\.)\s+/gm, '')
+    .replace(/[*_~`]+/g, '')
     .replace(/\s+/g, ' ')
     .trim()
 }

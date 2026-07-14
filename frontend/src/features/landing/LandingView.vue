@@ -95,7 +95,7 @@ function planItems(plan: PublicPlan): string[] {
   const speed = Number(plan.speed_limit)
   const devices = Number(plan.device_limit)
   const capacity = Number(plan.capacity_limit)
-  if (Number.isFinite(transfer) && transfer > 0) items.push(bytes(transfer) + ' 流量')
+  if (Number.isFinite(transfer) && transfer > 0) items.push(bytes(transfer * 1024 ** 3) + ' 流量')
   items.push(Number.isFinite(speed) && speed > 0 ? speed + ' Mbps 速率' : '不限速')
   items.push(Number.isFinite(devices) && devices > 0 ? devices + ' 台设备' : '设备不限')
   if (Number.isFinite(capacity) && capacity > 0) items.push('剩余 ' + capacity + ' 个名额')

@@ -25,6 +25,7 @@ describe('public catalog helpers', () => {
 
   it('removes markup before using plan content as plain text', () => {
     expect(stripMarkup('<p>  100 GB </p><br>高速')).toBe('100 GB 高速')
+    expect(stripMarkup('#### 📦 套餐详情\n- **流量**：200 GB\n- [使用文档](https://example.com)')).toBe('📦 套餐详情 流量：200 GB 使用文档')
   })
 
   it('reads Xboard plan feature JSON without treating markdown as JSON', () => {
