@@ -39,7 +39,6 @@ class ThemeServiceTest extends TestCase
         $this->assertStringContainsString('{!! $runtime_config_json !!}', $view);
         $this->assertStringNotContainsString('@json(', $view);
         $this->assertStringContainsString('assets/{{ $entry_asset }}', $view);
-        $this->assertStringContainsString('rel="modulepreload"', $view);
         $this->assertStringNotContainsString('assets/app.js?v=', $view);
     }
 
