@@ -1,11 +1,10 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { readToken } from '@/stores/auth-token'
-import LandingView from '@/features/landing/LandingView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
-    { path: '/', component: LandingView, meta: { public: true } },
+    { path: '/', component: () => import('@/features/landing/LandingView.vue'), meta: { public: true } },
     { path: '/login', component: () => import('@/features/auth/AuthView.vue'), meta: { public: true, mode: 'login' } },
     { path: '/register', component: () => import('@/features/auth/AuthView.vue'), meta: { public: true, mode: 'register' } },
     { path: '/forgetpassword', component: () => import('@/features/auth/AuthView.vue'), meta: { public: true, mode: 'forget' } },

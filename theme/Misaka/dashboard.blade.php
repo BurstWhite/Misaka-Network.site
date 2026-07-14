@@ -18,6 +18,9 @@
     })();
   </script>
   <link rel="stylesheet" href="/theme/{{ $theme }}/assets/app.css?v={{ $version }}" />
+  @foreach ($module_preloads as $module)
+  <link rel="modulepreload" href="/theme/{{ $theme }}/assets/{{ $module }}" />
+  @endforeach
   <script type="module" src="/theme/{{ $theme }}/assets/{{ $entry_asset }}"></script>
 </head>
 <body><div id="app"></div>{!! $theme_config['custom_html'] ?? '' !!}</body>

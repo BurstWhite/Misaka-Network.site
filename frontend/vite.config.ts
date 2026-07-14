@@ -16,6 +16,12 @@ export default defineConfig({
         entryFileNames: 'app-[hash].js',
         chunkFileNames: 'chunks/[name]-[hash].js',
         assetFileNames: (asset) => asset.names?.some((name) => name.endsWith('.css')) ? 'app.css' : 'assets/[name]-[hash][extname]',
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined
+          if (id.includes('vue-i18n')) return 'i18n'
+          if (id.includes('axios')) return 'http'
+          return 'vendor'
+        },
       },
     },
   },
