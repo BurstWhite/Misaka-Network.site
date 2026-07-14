@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Exceptions\ApiException;
 use App\Models\Coupon;
 use App\Models\Order;
-use Illuminate\Support\Facades\DB;
+use App\Models\User;
 
 class CouponService
 {
@@ -14,11 +14,17 @@ class CouponService
     public $userId;
     public $period;
 
-    public function __construct($code)
+    public function __construct($code, bool $lockForUpdate = true)
     {
-        $this->coupon = Coupon::where('code', $code)
-            ->lockForUpdate()
-            ->first();
+        if ($code instanceof Coupon) {
+            $this->coupon = $lockForUpdate
+                ? Coupon::whereKey($code->getKey())->lockForUpdate()->first()
+                : $code;
+            return;
+        }
+
+        $query = Coupon::where('code', $code);
+        $this->coupon = ($lockForUpdate ? $query->lockForUpdate() : $query)->first();
     }
 
     public function use(Order $order): bool
@@ -27,26 +33,85 @@ class CouponService
         $this->setUserId($order->user_id);
         $this->setPeriod($order->period);
         $this->check();
-        switch ($this->coupon->type) {
-            case 1:
-                $order->discount_amount = $this->coupon->value;
-                break;
-            case 2:
-                $order->discount_amount = $order->total_amount * ($this->coupon->value / 100);
-                break;
-        }
-        if ($order->discount_amount > $order->total_amount) {
-            $order->discount_amount = $order->total_amount;
-        }
+        $order->discount_amount = $this->discountAmount((int) $order->total_amount);
+        $order->coupon_limit_deducted = false;
         if ($this->coupon->limit_use !== NULL) {
-            if ($this->coupon->limit_use <= 0)
-                return false;
-            $this->coupon->limit_use = $this->coupon->limit_use - 1;
-            if (!$this->coupon->save()) {
+            $updated = Coupon::whereKey($this->coupon->id)
+                ->where('limit_use', '>', 0)
+                ->decrement('limit_use');
+            if ($updated !== 1) {
                 return false;
             }
+            $order->coupon_limit_deducted = true;
         }
         return true;
+    }
+
+    public function discountAmount(int $totalAmount): int
+    {
+        $totalAmount = max(0, $totalAmount);
+        $value = max(0, (int) $this->coupon->value);
+        $discount = match ((int) $this->coupon->type) {
+            1 => $value,
+            2 => (int) floor($totalAmount * $value / 100),
+            default => 0,
+        };
+
+        return min($totalAmount, $discount);
+    }
+
+    /**
+     * @return array{coupon: Coupon, discount_amount: int}|null
+     */
+    public static function bestSavedFor(
+        User $user,
+        int $planId,
+        string $period,
+        int $totalAmount,
+    ): ?array {
+        return self::savedCandidatesFor($user, $planId, $period, $totalAmount)[0] ?? null;
+    }
+
+    /**
+     * @return array<int, array{coupon: Coupon, discount_amount: int}>
+     */
+    public static function savedCandidatesFor(
+        User $user,
+        int $planId,
+        string $period,
+        int $totalAmount,
+    ): array {
+        $candidates = [];
+
+        /** @var Coupon $coupon */
+        foreach ($user->savedCoupons()->get() as $coupon) {
+            $service = new self($coupon, false);
+            $service->setPlanId($planId);
+            $service->setUserId($user->id);
+            $service->setPeriod($period);
+
+            try {
+                $service->check();
+            } catch (ApiException) {
+                continue;
+            }
+
+            $discountAmount = $service->discountAmount($totalAmount);
+            if ($discountAmount <= 0) {
+                continue;
+            }
+            $candidates[] = [
+                'coupon' => $coupon,
+                'discount_amount' => $discountAmount,
+            ];
+        }
+
+        usort(
+            $candidates,
+            fn (array $left, array $right): int => $right['discount_amount'] <=> $left['discount_amount'],
+        );
+
+        return $candidates;
     }
 
     public function getId()

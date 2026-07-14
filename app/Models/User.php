@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -53,6 +54,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read User|null $invite_user 邀请人信息
  * @property-read \App\Models\Plan|null $plan 用户订阅计划
  * @property-read Coupon|null $savedCoupon 保存的优惠券
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Coupon> $savedCoupons 保存的优惠券列表
  * @property-read ServerGroup|null $group 权限组
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InviteCode> $codes 邀请码列表
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders 订单列表
@@ -120,6 +122,14 @@ class User extends Authenticatable
     public function savedCoupon(): BelongsTo
     {
         return $this->belongsTo(Coupon::class, 'saved_coupon_id', 'id');
+    }
+
+    public function savedCoupons(): BelongsToMany
+    {
+        return $this->belongsToMany(Coupon::class, 'v2_user_coupons', 'user_id', 'coupon_id')
+            ->withPivot('created_at')
+            ->orderByPivot('created_at')
+            ->orderBy('v2_coupon.id');
     }
 
     public function group(): BelongsTo

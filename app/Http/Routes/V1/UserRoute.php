@@ -65,6 +65,7 @@ class UserRoute
             $router->get('/coupon/saved', [CouponController::class, 'saved']);
             $router->post('/coupon/save', [CouponController::class, 'save']);
             $router->post('/coupon/remove', [CouponController::class, 'remove']);
+            $router->post('/coupon/best', [CouponController::class, 'best']);
             $router->post('/coupon/check', [CouponController::class, 'check']);
             // Gift Card
             $router->post('/gift-card/check', [GiftCardController::class, 'check']);

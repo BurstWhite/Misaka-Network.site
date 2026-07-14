@@ -16,9 +16,9 @@ describe('public catalog helpers', () => {
   })
 
   it.each([
-    ['Singapore SG', '🇸🇬'], ['US Edge', '🇺🇸'], ['Hong Kong HK', '🇭🇰'],
-    ['Hong Kong HKG', '🇭🇰'], ['Tokyo NRT', '🇯🇵'], ['Los Angeles LAX', '🇺🇸'],
-    ['Singapore SIN', '🇸🇬'], ['Frankfurt FRA', '🇩🇪'], ['Unknown ZZ', '🌐'], ['No code', '🌐'],
+    ['Singapore SG', '/assets/flags/sg.svg'], ['US Edge', '/assets/flags/us.svg'], ['Hong Kong HK', '/assets/flags/hk.svg'],
+    ['Hong Kong HKG', '/assets/flags/hk.svg'], ['Tokyo NRT', '/assets/flags/jp.svg'], ['Los Angeles LAX', '/assets/flags/us.svg'],
+    ['Singapore SIN', '/assets/flags/sg.svg'], ['Frankfurt FRA', '/assets/flags/de.svg'], ['Unknown ZZ', '/assets/flags/world.svg'], ['No code', '/assets/flags/world.svg'],
   ])('maps node location %s to its flag', (name, flag) => {
     expect(displayNodeFlag({ name })).toBe(flag)
   })

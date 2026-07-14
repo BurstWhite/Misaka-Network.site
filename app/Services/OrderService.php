@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\ApiException;
 use App\Jobs\OrderHandleJob;
+use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\Plan;
 use App\Models\TrafficResetLog;
@@ -56,20 +57,43 @@ class OrderService
         HookManager::call('order.create.before', [$user, $plan, $period, $couponCode]);
 
         return DB::transaction(function () use ($user, $plan, $period, $couponCode, $userService) {
+            $user = User::lockForUpdate()->findOrFail($user->id);
+            if ($userService->isNotCompleteOrderByUserId($user->id)) {
+                throw new ApiException(__('You have an unpaid or pending order, please try again later or cancel it'));
+            }
+
             $newPeriod = PlanService::getPeriodKey($period);
+            $totalAmount = (int) round((float) ($plan->prices[$newPeriod] ?? 0) * 100);
 
             $order = new Order([
                 'user_id' => $user->id,
                 'plan_id' => $plan->id,
                 'period' => $newPeriod,
                 'trade_no' => Helper::generateOrderNo(),
-                'total_amount' => (int) (optional($plan->prices)[$newPeriod] * 100),
+                'total_amount' => $totalAmount,
             ]);
 
             $orderService = new self($order);
 
-            if ($couponCode) {
-                $orderService->applyCoupon($couponCode);
+            $manualCouponCode = trim((string) $couponCode);
+            if ($manualCouponCode !== '') {
+                $orderService->applyCoupon($manualCouponCode);
+            } else {
+                $savedCoupons = CouponService::savedCandidatesFor(
+                    $user,
+                    $plan->id,
+                    $newPeriod,
+                    $totalAmount,
+                );
+
+                foreach ($savedCoupons as $savedCoupon) {
+                    try {
+                        $orderService->applyCoupon($savedCoupon['coupon']);
+                        break;
+                    } catch (ApiException) {
+                        // A concurrently exhausted account coupon falls back to the next best one.
+                    }
+                }
             }
 
             $orderService->setVipDiscount($user);
@@ -176,7 +200,11 @@ class OrderService
         if ($user->discount) {
             $order->discount_amount = $order->discount_amount + ($order->total_amount * ($user->discount / 100));
         }
-        $order->total_amount = $order->total_amount - $order->discount_amount;
+        $order->discount_amount = min(
+            $order->total_amount,
+            (int) floor((float) ($order->discount_amount ?? 0)),
+        );
+        $order->total_amount = max(0, $order->total_amount - $order->discount_amount);
     }
 
     public function setInvite(User $user): void
@@ -288,11 +316,18 @@ class OrderService
         $order = $this->order;
         if ($order->status !== Order::STATUS_PENDING)
             return true;
-        $order->status = Order::STATUS_PROCESSING;
-        $order->paid_at = time();
-        $order->callback_no = $callbackNo;
-        if (!$order->save())
-            return false;
+        $updated = Order::whereKey($order->id)
+            ->where('status', Order::STATUS_PENDING)
+            ->update([
+                'status' => Order::STATUS_PROCESSING,
+                'paid_at' => time(),
+                'callback_no' => $callbackNo,
+            ]);
+        if ($updated !== 1) {
+            $order->refresh();
+            return true;
+        }
+        $order->refresh();
         try {
             OrderHandleJob::dispatchSync($order->trade_no);
         } catch (\Exception $e) {
@@ -307,22 +342,41 @@ class OrderService
         $order = $this->order;
         HookManager::call('order.cancel.before', $order);
         try {
-            DB::beginTransaction();
-            $order->status = Order::STATUS_CANCELLED;
-            if (!$order->save()) {
-                throw new \Exception('Failed to save order status.');
-            }
-            if ($order->balance_amount) {
-                $userService = new UserService();
-                if (!$userService->addBalance($order->user_id, $order->balance_amount)) {
-                    throw new \Exception('Failed to add balance.');
+            $result = DB::transaction(function () use ($order): int {
+                $updated = Order::whereKey($order->id)
+                    ->where('status', Order::STATUS_PENDING)
+                    ->update(['status' => Order::STATUS_CANCELLED]);
+                if ($updated !== 1) {
+                    $order->refresh();
+                    return $order->status === Order::STATUS_CANCELLED ? 1 : 0;
                 }
+
+                $order->refresh();
+                if ($order->balance_amount) {
+                    $userService = new UserService();
+                    if (!$userService->addBalance($order->user_id, $order->balance_amount)) {
+                        throw new \Exception('Failed to add balance.');
+                    }
+                }
+                if ($order->coupon_id && $order->coupon_limit_deducted) {
+                    Coupon::whereKey($order->coupon_id)
+                        ->whereNotNull('limit_use')
+                        ->increment('limit_use');
+                    $order->coupon_limit_deducted = false;
+                    $order->saveOrFail();
+                }
+
+                return 2;
+            });
+
+            if ($result === 0) {
+                return false;
             }
-            DB::commit();
-            HookManager::call('order.cancel.after', $order);
+            if ($result === 2) {
+                HookManager::call('order.cancel.after', $order);
+            }
             return true;
-        } catch (\Exception $e) {
-            DB::rollBack();
+        } catch (\Throwable $e) {
             Log::error($e);
             return false;
         }
@@ -393,9 +447,9 @@ class OrderService
         }
     }
 
-    protected function applyCoupon(string $couponCode): void
+    protected function applyCoupon(string|Coupon $coupon): void
     {
-        $couponService = new CouponService($couponCode);
+        $couponService = new CouponService($coupon);
         if (!$couponService->use($this->order)) {
             throw new ApiException(__('Coupon failed'));
         }

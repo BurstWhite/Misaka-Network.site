@@ -23,7 +23,7 @@ const inviteDetailsLoaded = ref(false)
 const inviteSaving = ref(false)
 const couponCode = ref('')
 const couponSaving = ref(false)
-const couponRemoving = ref(false)
+const couponRemovingId = ref<string | number | null>(null)
 const couponError = ref('')
 const message = ref('')
 const knowledgeKeyword = ref('')
@@ -49,7 +49,7 @@ const loaders: Record<string, () => Promise<any>> = {
   traffic: () => serviceApi.traffic({ days: 14 }),
   servers: serviceApi.servers,
   knowledge: () => serviceApi.knowledge({ keyword: knowledgeKeyword.value.trim() || undefined }),
-  gifts: commerceApi.savedCoupon,
+  gifts: commerceApi.savedCoupons,
 }
 
 async function load() {
@@ -112,14 +112,15 @@ async function toggleInviteDetails(code: string) {
 
 async function saveCoupon() {
   const code = couponCode.value.trim()
-  if (!code || couponSaving.value || couponRemoving.value) return
+  if (!code || couponSaving.value || couponRemovingId.value !== null) return
   couponSaving.value = true
   couponError.value = ''
   message.value = ''
   try {
-    data.value = await commerceApi.saveCoupon(code)
+    await commerceApi.saveCoupon(code)
+    data.value = await commerceApi.savedCoupons()
     couponCode.value = ''
-    message.value = '优惠券已保存到当前账号'
+    message.value = '优惠券已验证并保存到当前账号'
   } catch (e: any) {
     couponError.value = e.message
   } finally {
@@ -127,19 +128,19 @@ async function saveCoupon() {
   }
 }
 
-async function removeCoupon() {
-  if (couponSaving.value || couponRemoving.value) return
-  couponRemoving.value = true
+async function removeCoupon(couponId: string | number) {
+  if (couponSaving.value || couponRemovingId.value !== null) return
+  couponRemovingId.value = couponId
   couponError.value = ''
   message.value = ''
   try {
-    await commerceApi.removeSavedCoupon()
-    data.value = null
+    await commerceApi.removeSavedCoupon(couponId)
+    data.value = savedCoupons.value.filter((coupon) => String(coupon.id) !== String(couponId))
     message.value = '已删除账号保存的优惠券'
   } catch (e: any) {
     couponError.value = e.message
   } finally {
-    couponRemoving.value = false
+    couponRemovingId.value = null
   }
 }
 
@@ -178,6 +179,12 @@ const rows = computed<any[]>(() => {
   }
   if (Array.isArray(data.value)) return data.value
   return data.value?.data || data.value?.records || []
+})
+const savedCoupons = computed<any[]>(() => {
+  if (kind.value !== 'gifts' || !data.value) return []
+  if (Array.isArray(data.value)) return data.value
+  if (Array.isArray(data.value.data)) return data.value.data
+  return [data.value]
 })
 const knowledgeGroups = computed(() => {
   if (kind.value !== 'knowledge' || !data.value || Array.isArray(data.value)) return []
@@ -271,7 +278,7 @@ function closeKnowledge() { selectedKnowledge.value = null }
       <div v-if="selectedServer" class="dashboard-node-body">
         <div class="dashboard-node-list">
           <button v-for="server in rows" :key="server.id" type="button" :class="['dashboard-node-item', { active: String(server.id) === String(selectedServer.id) }]" @click="selectedServerId = server.id">
-            <span class="dashboard-node-code" aria-hidden="true">{{ displayNodeFlag(server) }}</span><span><strong>{{ server.name }}</strong><small>{{ server.type || '-' }} · {{ serverStatus(server).label }}</small></span><em :class="serverStatus(server).key">{{ Number(server.rate || 1).toFixed(1) }}×</em>
+            <span class="dashboard-node-code" aria-hidden="true"><img :src="displayNodeFlag(server)" alt=""/></span><span><strong>{{ server.name }}</strong><small>{{ server.type || '-' }} · {{ serverStatus(server).label }}</small></span><em :class="serverStatus(server).key">{{ Number(server.rate || 1).toFixed(1) }}×</em>
           </button>
         </div>
         <div class="dashboard-node-detail">
@@ -299,8 +306,11 @@ function closeKnowledge() { selectedKnowledge.value = null }
     <template v-else>
       <section v-if="kind === 'invite'" class="stats-strip"><div><small>已注册用户</small><strong>{{ inviteStats[0] || 0 }}</strong></div><div><small>有效佣金</small><strong>{{ money(inviteStats[1] || 0) }}</strong></div><div><small>佣金比例</small><strong>{{ inviteStats[3] || 0 }}%</strong></div></section>
       <section v-if="kind === 'gifts'" class="panel gift-redeem">
-        <form class="copy-row" @submit.prevent="saveCoupon"><input v-model.trim="couponCode" placeholder="输入管理员创建的优惠码" autocomplete="off"/><button class="button primary" :disabled="couponSaving || couponRemoving || !couponCode">{{ couponSaving ? '保存中' : data ? '更换优惠券' : '保存优惠券' }}</button></form>
-        <div v-if="data" class="coupon-preview"><div><strong>{{ data.name || '已保存优惠券' }}</strong><p>{{ couponValue(data) }} · 优惠码 {{ data.code }} · 有效期至 {{ date(data.ended_at) }}</p></div><div class="coupon-preview-actions"><button class="button secondary" type="button" :disabled="couponSaving || couponRemoving" @click="removeCoupon">{{ couponRemoving ? '删除中' : '删除' }}</button><button class="button primary" type="button" :disabled="couponSaving || couponRemoving" @click="buyWithSavedCoupon">购买套餐</button></div></div>
+        <form class="copy-row" @submit.prevent="saveCoupon"><input v-model.trim="couponCode" placeholder="输入管理员创建的优惠码" autocomplete="off"/><button class="button primary" :disabled="couponSaving || couponRemovingId !== null || !couponCode">{{ couponSaving ? '验证中' : '验证并保存' }}</button></form>
+        <div v-if="savedCoupons.length" class="saved-coupon-list">
+          <div v-for="coupon in savedCoupons" :key="coupon.id" class="coupon-preview"><div><strong>{{ coupon.name || '已保存优惠券' }}</strong><p>{{ couponValue(coupon) }} · 优惠码 {{ coupon.code }} · 有效期至 {{ date(coupon.ended_at) }}</p></div><div class="coupon-preview-actions"><button class="button secondary" type="button" :disabled="couponSaving || couponRemovingId !== null" @click="removeCoupon(coupon.id)">{{ String(couponRemovingId) === String(coupon.id) ? '删除中' : '删除' }}</button></div></div>
+          <button class="button primary" type="button" :disabled="couponSaving || couponRemovingId !== null" @click="buyWithSavedCoupon">购买套餐</button>
+        </div>
         <p v-else class="muted">当前账号尚未保存优惠券。</p>
         <p v-if="couponError" class="form-message error">{{ couponError }}</p>
       </section>

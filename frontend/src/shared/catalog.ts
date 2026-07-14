@@ -43,16 +43,17 @@ export function displayNodeCode(node: Pick<PublicNode, 'name' | 'type'>): string
 }
 
 const nodeFlags: Record<string, string> = {
-  HK: '🇭🇰', HKG: '🇭🇰',
-  JP: '🇯🇵', NRT: '🇯🇵',
-  US: '🇺🇸', LAX: '🇺🇸',
-  SG: '🇸🇬', SIN: '🇸🇬',
-  DE: '🇩🇪', FRA: '🇩🇪',
+  HK: 'hk', HKG: 'hk',
+  JP: 'jp', NRT: 'jp',
+  US: 'us', LAX: 'us',
+  SG: 'sg', SIN: 'sg',
+  DE: 'de', FRA: 'de',
 }
 
 export function displayNodeFlag(node: Pick<PublicNode, 'name'>): string {
   const code = nodeLocationCode(node?.name)
-  return code ? nodeFlags[code] || '🌐' : '🌐'
+  const flag = code ? nodeFlags[code] : undefined
+  return `/assets/flags/${flag || 'world'}.svg`
 }
 
 export function displayRate(rate: PublicNode['rate']): string {

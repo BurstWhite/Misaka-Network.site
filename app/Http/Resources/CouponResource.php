@@ -2,8 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Coupon;
-use App\Services\CouponService;
 use App\Services\PlanService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -23,8 +21,11 @@ class CouponResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $attributes = $this->resource->toArray();
+        unset($attributes['pivot']);
+
         return [
-            ...$this->resource->toArray(),
+            ...$attributes,
             'limit_plan_ids' => empty($this->limit_plan_ids) ? null : collect($this->limit_plan_ids)
                 ->map(fn(mixed $id): string => (string) $id)
                 ->values()

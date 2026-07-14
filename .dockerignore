@@ -4,6 +4,8 @@
 /config/v2board.php
 /public/hot
 /public/storage
+/public/theme/*
+!/public/theme/.gitignore
 /public/env.example.js
 /storage/*.key
 /vendor
