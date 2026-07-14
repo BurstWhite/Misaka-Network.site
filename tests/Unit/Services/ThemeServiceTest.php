@@ -156,4 +156,34 @@ class ThemeServiceTest extends TestCase
 
         $this->assertSame('Misaka', app(ThemeService::class)->resolveCurrentTheme());
     }
+
+    public function test_misaka_content_defaults_are_available_to_existing_installations(): void
+    {
+        admin_setting(['theme_Misaka' => ['primary_color' => '#123456']]);
+
+        $config = app(ThemeService::class)->getConfig('Misaka');
+
+        $this->assertSame('#123456', $config['primary_color']);
+        $this->assertJson($config['content_json']);
+        $this->assertSame(
+            '连接世界。',
+            json_decode($config['content_json'], true, 32, JSON_THROW_ON_ERROR)['landing.hero.title']
+        );
+    }
+
+    public function test_misaka_content_editor_rejects_invalid_json(): void
+    {
+        $this->expectException(\JsonException::class);
+
+        app(ThemeService::class)->updateConfig('Misaka', ['content_json' => '{broken']);
+    }
+
+    public function test_misaka_content_editor_saves_string_map(): void
+    {
+        $content = json_encode(['landing.hero.title' => '新的标题'], JSON_UNESCAPED_UNICODE);
+
+        app(ThemeService::class)->updateConfig('Misaka', ['content_json' => $content]);
+
+        $this->assertSame($content, app(ThemeService::class)->getConfig('Misaka')['content_json']);
+    }
 }

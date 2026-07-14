@@ -7,6 +7,7 @@ export const runtimeConfig: MisakaRuntimeConfig = window.__MISAKA_CONFIG__ ?? {
   version: 'development',
   supportedLocales: ['zh-CN', 'zh-TW', 'en-US', 'ja-JP', 'vi-VN', 'ko-KR', 'ru-RU', 'fa-IR'],
   theme: { primaryColor: '#3155ee' },
+  content: {},
   features: {},
 }
 

@@ -9,6 +9,7 @@ import Icon from '@/shared/Icon.vue'
 import NodeStatusLegend from '@/shared/NodeStatusLegend.vue'
 import { bytes, date, money, orderStatus } from '@/shared/format'
 import { renderRichText } from '@/shared/rich-text'
+import { content } from '@/shared/content'
 import { aggregateTrafficByDay } from '@/shared/traffic'
 
 const { t } = useI18n()
@@ -140,7 +141,7 @@ const onlineServerCount = computed(() => servers.value.filter((server) => server
       <div class="dashboard-grid">
         <div class="dashboard-main">
           <section class="panel chart-panel">
-            <header><div><h2>{{ t('dashboard.usage') }}</h2><p>悬浮折线节点查看当日用量</p></div><span>{{ trafficPoints.length }} 天</span></header>
+            <header><div><h2>{{ t('dashboard.usage') }}</h2><p>{{ content('dashboard.usage.description', '悬浮折线节点查看当日用量') }}</p></div><span>{{ trafficPoints.length }} 天</span></header>
             <svg class="usage-chart" viewBox="0 0 680 150" preserveAspectRatio="xMidYMid meet" role="img" aria-label="每日流量使用折线图" @mouseleave="chartHover = false">
               <defs><linearGradient id="dashboard-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1bb8d1" stop-opacity=".25"/><stop offset="1" stop-color="#1bb8d1" stop-opacity="0"/></linearGradient></defs>
               <line v-for="y in [35,70,105,140]" :key="y" x1="10" x2="670" :y1="y" :y2="y" stroke="var(--border)" stroke-dasharray="3 5"/>
@@ -156,7 +157,7 @@ const onlineServerCount = computed(() => servers.value.filter((server) => server
         <aside class="panel notice-panel"><header><h2>{{ t('dashboard.notices') }}</h2><span>{{ notices.length }}</span></header><button v-for="notice in notices.slice(0, 6)" :key="notice.id" type="button" class="notice-item" @click="openNotice(notice, $event)"><i/><div><strong>{{ notice.title }}</strong><time>{{ date(notice.created_at, true) }}</time></div><Icon name="chevron"/></button><p v-if="!notices.length" class="page-state">{{ t('common.empty') }}</p></aside>
       </div>
       <section class="panel dashboard-node-panel dashboard-node-table-panel">
-        <header><div><h2>节点状态</h2><p>实时查看可用节点与最近心跳</p></div><div class="dashboard-node-summary"><NodeStatusLegend/>{{ onlineServerCount }} / {{ servers.length }} 在线<RouterLink to="/servers">查看全部</RouterLink></div></header>
+        <header><div><h2>节点状态</h2><p>{{ content('dashboard.servers.description', '实时查看可用节点与最近心跳') }}</p></div><div class="dashboard-node-summary"><NodeStatusLegend/>{{ onlineServerCount }} / {{ servers.length }} 在线<RouterLink to="/servers">查看全部</RouterLink></div></header>
         <div class="table-wrap">
           <table class="server-table">
             <thead><tr><th>节点</th><th>协议</th><th>倍率</th><th>状态</th><th>在线状态检查时间</th></tr></thead>

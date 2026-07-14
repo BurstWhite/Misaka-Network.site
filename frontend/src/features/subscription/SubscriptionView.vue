@@ -8,6 +8,7 @@ import { bytes, date } from '@/shared/format'
 import { clientImportUrl, type SupportedClient } from '@/shared/client-import'
 import { renderRichText } from '@/shared/rich-text'
 import { runtimeConfig } from '@/app/config'
+import { content } from '@/shared/content'
 
 const loading = ref(true)
 const error = ref('')
@@ -53,7 +54,7 @@ async function reset() {
 
 <template>
   <PageState :loading="loading" :error="error" @retry="load">
-    <div class="page-heading"><div><h1>我的订阅</h1><p>管理订阅、查看套餐权益，并一键导入常用客户端。</p></div></div>
+    <div class="page-heading"><div><h1>我的订阅</h1><p>{{ content('subscription.description', '管理订阅、查看套餐权益，并一键导入常用客户端。') }}</p></div></div>
 
     <section class="subscription-overview">
       <div class="plan-summary">

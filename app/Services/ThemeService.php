@@ -431,7 +431,13 @@ class ThemeService
             $config = json_last_error() === JSON_ERROR_NONE ? $decoded : [];
         }
 
-        return is_array($config) ? $config : [];
+        $config = is_array($config) ? $config : [];
+        $schema = $this->readConfigFile($theme);
+        $defaults = collect($schema['configs'] ?? [])
+            ->mapWithKeys(fn($field) => [$field['field_name'] => $field['default_value'] ?? ''])
+            ->toArray();
+
+        return array_merge($defaults, $config);
     }
 
     /**
@@ -453,6 +459,18 @@ class ThemeService
             $validConfig = collect($config)
                 ->only($validFields)
                 ->toArray();
+
+            foreach ($schema['configs'] ?? [] as $field) {
+                $fieldName = $field['field_name'] ?? null;
+                if (($field['field_format'] ?? null) !== 'json' || !$fieldName || !array_key_exists($fieldName, $validConfig)) {
+                    continue;
+                }
+
+                $decoded = json_decode((string) $validConfig[$fieldName], true, 32, JSON_THROW_ON_ERROR);
+                if (!is_array($decoded) || collect($decoded)->contains(fn($value) => !is_string($value))) {
+                    throw new Exception(($field['label'] ?? $fieldName) . '必须是仅包含字符串值的 JSON 对象');
+                }
+            }
 
             $currentConfig = $this->getConfig($theme) ?? [];
             $newConfig = array_merge($currentConfig, $validConfig);

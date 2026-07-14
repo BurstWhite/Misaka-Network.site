@@ -17,12 +17,12 @@
     "file": "chunks/_plugin-vue_export-helper-DlAUqK2U.js",
     "name": "_plugin-vue_export-helper"
   },
-  "_auth-ZorP1bJ6.js": {
-    "file": "chunks/auth-ZorP1bJ6.js",
+  "_auth-nKs3EEZB.js": {
+    "file": "chunks/auth-nKs3EEZB.js",
     "name": "auth",
     "imports": [
       "_vendor-B3FfLiMG.js",
-      "_services-SjkgkpVr.js",
+      "_services-C31woDOV.js",
       "src/main.ts"
     ]
   },
@@ -30,8 +30,15 @@
     "file": "chunks/catalog-BO3eDxL7.js",
     "name": "catalog"
   },
-  "_format-Ds2X-Z7G.js": {
-    "file": "chunks/format-Ds2X-Z7G.js",
+  "_content-BfcBcK76.js": {
+    "file": "chunks/content-BfcBcK76.js",
+    "name": "content",
+    "imports": [
+      "src/main.ts"
+    ]
+  },
+  "_format-BnlScoLe.js": {
+    "file": "chunks/format-BnlScoLe.js",
     "name": "format",
     "imports": [
       "src/main.ts"
@@ -52,8 +59,8 @@
     "file": "chunks/rich-text-C8qKUTav.js",
     "name": "rich-text"
   },
-  "_services-SjkgkpVr.js": {
-    "file": "chunks/services-SjkgkpVr.js",
+  "_services-C31woDOV.js": {
+    "file": "chunks/services-C31woDOV.js",
     "name": "services",
     "imports": [
       "_http-DhXgJQ-f.js",
@@ -73,7 +80,7 @@
     "name": "vendor"
   },
   "src/features/auth/AuthView.vue": {
-    "file": "chunks/AuthView-CV8vbnw_.js",
+    "file": "chunks/AuthView-Bw-ESsr-.js",
     "name": "AuthView",
     "src": "src/features/auth/AuthView.vue",
     "isDynamicEntry": true,
@@ -81,44 +88,46 @@
       "_vendor-B3FfLiMG.js",
       "_i18n-BW-F1MOg.js",
       "src/main.ts",
-      "_auth-ZorP1bJ6.js",
-      "_services-SjkgkpVr.js",
+      "_auth-nKs3EEZB.js",
+      "_services-C31woDOV.js",
       "_http-DhXgJQ-f.js"
     ]
   },
   "src/features/dashboard/DashboardView.vue": {
-    "file": "chunks/DashboardView-7GgtFJ-i.js",
+    "file": "chunks/DashboardView-CDhJJokc.js",
     "name": "DashboardView",
     "src": "src/features/dashboard/DashboardView.vue",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-B3FfLiMG.js",
       "_i18n-BW-F1MOg.js",
-      "_services-SjkgkpVr.js",
+      "_services-C31woDOV.js",
       "_PageState.vue_vue_type_script_setup_true_lang-VnQNGto1.js",
       "_Icon.vue_vue_type_script_setup_true_lang-BVhQ0e4Q.js",
       "_traffic-Bf4d8bhi.js",
-      "_format-Ds2X-Z7G.js",
+      "_format-BnlScoLe.js",
       "_rich-text-C8qKUTav.js",
+      "_content-BfcBcK76.js",
       "_http-DhXgJQ-f.js",
       "src/main.ts",
       "__plugin-vue_export-helper-DlAUqK2U.js"
     ]
   },
   "src/features/data/DataView.vue": {
-    "file": "chunks/DataView-CwhKfebK.js",
+    "file": "chunks/DataView-uE28ejng.js",
     "name": "DataView",
     "src": "src/features/data/DataView.vue",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-B3FfLiMG.js",
-      "_services-SjkgkpVr.js",
+      "_services-C31woDOV.js",
       "_PageState.vue_vue_type_script_setup_true_lang-VnQNGto1.js",
       "_Icon.vue_vue_type_script_setup_true_lang-BVhQ0e4Q.js",
       "_traffic-Bf4d8bhi.js",
       "_catalog-BO3eDxL7.js",
-      "_format-Ds2X-Z7G.js",
+      "_format-BnlScoLe.js",
       "_rich-text-C8qKUTav.js",
+      "_content-BfcBcK76.js",
       "_http-DhXgJQ-f.js",
       "src/main.ts",
       "_i18n-BW-F1MOg.js",
@@ -126,17 +135,18 @@
     ]
   },
   "src/features/landing/LandingView.vue": {
-    "file": "chunks/LandingView-DAEXgTFp.js",
+    "file": "chunks/LandingView-D0HAO8hv.js",
     "name": "LandingView",
     "src": "src/features/landing/LandingView.vue",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-B3FfLiMG.js",
-      "_services-SjkgkpVr.js",
+      "_services-C31woDOV.js",
       "src/main.ts",
       "_Icon.vue_vue_type_script_setup_true_lang-BVhQ0e4Q.js",
-      "_format-Ds2X-Z7G.js",
+      "_format-BnlScoLe.js",
       "_catalog-BO3eDxL7.js",
+      "_content-BfcBcK76.js",
       "__plugin-vue_export-helper-DlAUqK2U.js",
       "_http-DhXgJQ-f.js",
       "_i18n-BW-F1MOg.js"
@@ -146,30 +156,31 @@
     ]
   },
   "src/features/orders/OrderDetailView.vue": {
-    "file": "chunks/OrderDetailView-CeTgTXc4.js",
+    "file": "chunks/OrderDetailView-CgZLZ59n.js",
     "name": "OrderDetailView",
     "src": "src/features/orders/OrderDetailView.vue",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-B3FfLiMG.js",
-      "_services-SjkgkpVr.js",
+      "_services-C31woDOV.js",
       "_PageState.vue_vue_type_script_setup_true_lang-VnQNGto1.js",
       "_Icon.vue_vue_type_script_setup_true_lang-BVhQ0e4Q.js",
-      "_format-Ds2X-Z7G.js",
+      "_format-BnlScoLe.js",
       "_http-DhXgJQ-f.js",
       "src/main.ts",
       "_i18n-BW-F1MOg.js"
     ]
   },
   "src/features/orders/OrdersView.vue": {
-    "file": "chunks/OrdersView-Cjk0qOwl.js",
+    "file": "chunks/OrdersView-uyQSCZb4.js",
     "name": "OrdersView",
     "src": "src/features/orders/OrdersView.vue",
     "isDynamicEntry": true,
     "imports": [
-      "_services-SjkgkpVr.js",
+      "_services-C31woDOV.js",
       "_PageState.vue_vue_type_script_setup_true_lang-VnQNGto1.js",
-      "_format-Ds2X-Z7G.js",
+      "_content-BfcBcK76.js",
+      "_format-BnlScoLe.js",
       "_vendor-B3FfLiMG.js",
       "_http-DhXgJQ-f.js",
       "src/main.ts",
@@ -177,72 +188,76 @@
     ]
   },
   "src/features/plans/PlansView.vue": {
-    "file": "chunks/PlansView-B7ca_Tdo.js",
+    "file": "chunks/PlansView-BzBsSk3-.js",
     "name": "PlansView",
     "src": "src/features/plans/PlansView.vue",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-B3FfLiMG.js",
-      "_services-SjkgkpVr.js",
+      "_services-C31woDOV.js",
       "_PageState.vue_vue_type_script_setup_true_lang-VnQNGto1.js",
-      "_format-Ds2X-Z7G.js",
+      "_format-BnlScoLe.js",
       "_catalog-BO3eDxL7.js",
       "_rich-text-C8qKUTav.js",
+      "_content-BfcBcK76.js",
       "_http-DhXgJQ-f.js",
       "src/main.ts",
       "_i18n-BW-F1MOg.js"
     ]
   },
   "src/features/profile/ProfileView.vue": {
-    "file": "chunks/ProfileView-DLOm0Gze.js",
+    "file": "chunks/ProfileView-CpaBZgXN.js",
     "name": "ProfileView",
     "src": "src/features/profile/ProfileView.vue",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-B3FfLiMG.js",
-      "_services-SjkgkpVr.js",
+      "_services-C31woDOV.js",
       "_PageState.vue_vue_type_script_setup_true_lang-VnQNGto1.js",
       "_Icon.vue_vue_type_script_setup_true_lang-BVhQ0e4Q.js",
-      "_format-Ds2X-Z7G.js",
+      "_format-BnlScoLe.js",
+      "_content-BfcBcK76.js",
       "_http-DhXgJQ-f.js",
       "src/main.ts",
       "_i18n-BW-F1MOg.js"
     ]
   },
   "src/features/subscription/SubscriptionView.vue": {
-    "file": "chunks/SubscriptionView-CRfmEnqy.js",
+    "file": "chunks/SubscriptionView-DZzSRQIo.js",
     "name": "SubscriptionView",
     "src": "src/features/subscription/SubscriptionView.vue",
     "isDynamicEntry": true,
     "imports": [
-      "_services-SjkgkpVr.js",
+      "_services-C31woDOV.js",
       "_PageState.vue_vue_type_script_setup_true_lang-VnQNGto1.js",
       "_Icon.vue_vue_type_script_setup_true_lang-BVhQ0e4Q.js",
-      "_format-Ds2X-Z7G.js",
+      "_format-BnlScoLe.js",
       "_rich-text-C8qKUTav.js",
       "src/main.ts",
+      "_content-BfcBcK76.js",
       "_vendor-B3FfLiMG.js",
       "_http-DhXgJQ-f.js",
       "_i18n-BW-F1MOg.js"
     ]
   },
   "src/features/tickets/TicketsView.vue": {
-    "file": "chunks/TicketsView-DCBK6FKn.js",
+    "file": "chunks/TicketsView-DYhv9m7t.js",
     "name": "TicketsView",
     "src": "src/features/tickets/TicketsView.vue",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-B3FfLiMG.js",
-      "_services-SjkgkpVr.js",
+      "_services-C31woDOV.js",
       "_PageState.vue_vue_type_script_setup_true_lang-VnQNGto1.js",
-      "_format-Ds2X-Z7G.js",
+      "_content-BfcBcK76.js",
+      "_format-BnlScoLe.js",
       "_http-DhXgJQ-f.js",
       "src/main.ts",
       "_i18n-BW-F1MOg.js"
     ]
   },
   "src/layouts/AppShell.vue": {
-    "file": "chunks/AppShell-uL6wCOK5.js",
+    "file": "chunks/AppShell-Dln1nP-8.js",
     "name": "AppShell",
     "src": "src/layouts/AppShell.vue",
     "isDynamicEntry": true,
@@ -251,13 +266,13 @@
       "_i18n-BW-F1MOg.js",
       "_Icon.vue_vue_type_script_setup_true_lang-BVhQ0e4Q.js",
       "src/main.ts",
-      "_services-SjkgkpVr.js",
-      "_auth-ZorP1bJ6.js",
+      "_services-C31woDOV.js",
+      "_auth-nKs3EEZB.js",
       "_http-DhXgJQ-f.js"
     ]
   },
   "src/main.ts": {
-    "file": "app-Cy3P2OCC.js",
+    "file": "app-EF0IGSHj.js",
     "name": "main",
     "src": "src/main.ts",
     "isEntry": true,

@@ -8,6 +8,7 @@ import { date, money, periods } from '@/shared/format'
 import { parsePlanFeatures } from '@/shared/catalog'
 import { couponDiscountAmount } from '@/shared/coupon'
 import { renderRichText } from '@/shared/rich-text'
+import { content } from '@/shared/content'
 
 const router = useRouter()
 const route = useRoute()
@@ -167,7 +168,7 @@ async function create(manual = false) {
 
 <template>
   <PageState :loading="loading" :error="error" @retry="load">
-    <div class="page-heading"><div><h1>购买订阅</h1><p>选择适合你的套餐和付款周期。</p></div></div>
+    <div class="page-heading"><div><h1>购买订阅</h1><p>{{ content('plans.description', '选择适合你的套餐和付款周期。') }}</p></div></div>
     <div class="plans-grid">
       <article v-for="plan in plans" :key="plan.id" :class="['plan-card', { selected: selected?.id === plan.id }]" @click="selected = plan">
         <h2>{{ plan.name }}</h2>

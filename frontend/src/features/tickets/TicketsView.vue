@@ -1,5 +1,94 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'; import { serviceApi } from '@/api/services'; import PageState from '@/shared/PageState.vue'; import { date } from '@/shared/format'
-const loading=ref(true),error=ref(''),tickets=ref<any[]>([]),show=ref(false),saving=ref(false),selected=ref<any>(null),reply=ref(''),form=reactive({subject:'',level:1,message:''});async function load(){loading.value=true;error.value='';try{const r=await serviceApi.tickets();tickets.value=Array.isArray(r)?r:r?.data||[]}catch(e:any){error.value=e.message}finally{loading.value=false}}async function create(){saving.value=true;try{await serviceApi.createTicket(form);show.value=false;Object.assign(form,{subject:'',level:1,message:''});await load()}catch(e:any){error.value=e.message}finally{saving.value=false}}async function openTicket(id:number){try{selected.value=await serviceApi.tickets({id})}catch(e:any){error.value=e.message}}async function sendReply(){if(!selected.value||!reply.value.trim())return;saving.value=true;try{await serviceApi.replyTicket({id:selected.value.id,message:reply.value.trim()});reply.value='';await openTicket(selected.value.id);await load()}catch(e:any){error.value=e.message}finally{saving.value=false}}async function closeTicket(){if(!selected.value)return;saving.value=true;try{await serviceApi.closeTicket(selected.value.id);await openTicket(selected.value.id);await load()}catch(e:any){error.value=e.message}finally{saving.value=false}}function latestMessage(item:any){return Array.isArray(item.message)?item.message.at(-1)?.message||'等待回复':item.message||'等待查看详情'}onMounted(load)
+import { onMounted, reactive, ref } from 'vue'
+import { serviceApi } from '@/api/services'
+import PageState from '@/shared/PageState.vue'
+import { content } from '@/shared/content'
+import { date } from '@/shared/format'
+
+const loading = ref(true)
+const error = ref('')
+const tickets = ref<any[]>([])
+const show = ref(false)
+const saving = ref(false)
+const selected = ref<any>(null)
+const reply = ref('')
+const form = reactive({ subject: '', level: 1, message: '' })
+
+async function load() {
+  loading.value = true
+  error.value = ''
+  try {
+    const result = await serviceApi.tickets()
+    tickets.value = Array.isArray(result) ? result : result?.data || []
+  } catch (e: any) {
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+}
+
+async function create() {
+  saving.value = true
+  try {
+    await serviceApi.createTicket(form)
+    show.value = false
+    Object.assign(form, { subject: '', level: 1, message: '' })
+    await load()
+  } catch (e: any) {
+    error.value = e.message
+  } finally {
+    saving.value = false
+  }
+}
+
+async function openTicket(id: number) {
+  try { selected.value = await serviceApi.tickets({ id }) } catch (e: any) { error.value = e.message }
+}
+
+async function sendReply() {
+  if (!selected.value || !reply.value.trim()) return
+  saving.value = true
+  try {
+    await serviceApi.replyTicket({ id: selected.value.id, message: reply.value.trim() })
+    reply.value = ''
+    await openTicket(selected.value.id)
+    await load()
+  } catch (e: any) {
+    error.value = e.message
+  } finally {
+    saving.value = false
+  }
+}
+
+async function closeTicket() {
+  if (!selected.value) return
+  saving.value = true
+  try {
+    await serviceApi.closeTicket(selected.value.id)
+    await openTicket(selected.value.id)
+    await load()
+  } catch (e: any) {
+    error.value = e.message
+  } finally {
+    saving.value = false
+  }
+}
+
+function latestMessage(item: any) {
+  return Array.isArray(item.message) ? item.message.at(-1)?.message || '等待回复' : item.message || '等待查看详情'
+}
+
+onMounted(load)
 </script>
-<template><PageState :loading="loading" :error="error" @retry="load"><div class="page-heading"><div><h1>我的工单</h1><p>和技术支持团队沟通并跟进问题。</p></div><button class="button primary" @click="show=true">新的工单</button></div><section class="panel list-panel"><article v-for="item in tickets" :key="item.id" role="button" tabindex="0" @click="openTicket(item.id)" @keydown.enter="openTicket(item.id)"><div><strong>{{item.subject}}</strong><p>{{latestMessage(item)}}</p></div><div><span :class="['status', item.reply_status===1?'success':'']">{{item.status===1?'已关闭':item.reply_status===1?'已回复':'待回复'}}</span><time>{{date(item.updated_at||item.created_at,true)}}</time></div></article><div v-if="!tickets.length" class="page-state">暂无工单</div></section><div v-if="show" class="modal-backdrop" @click.self="show=false"><form class="modal" @submit.prevent="create"><header><div><h2>新的工单</h2><p>请描述你遇到的问题</p></div><button type="button" class="icon-button" @click="show=false">×</button></header><label>主题<input v-model="form.subject" required /></label><label>等级<select v-model="form.level"><option :value="0">低</option><option :value="1">中</option><option :value="2">高</option></select></label><label>消息<textarea v-model="form.message" rows="5" required /></label><footer><button type="button" class="button secondary" @click="show=false">取消</button><button class="button primary" :disabled="saving">{{saving?'正在提交':'提交'}}</button></footer></form></div><div v-if="selected" class="modal-backdrop" @click.self="selected=null"><section class="modal"><header><div><h2>{{ selected.subject }}</h2><p>工单 #{{ selected.id }}</p></div><button class="icon-button" @click="selected=null">×</button></header><div class="ticket-messages"><p v-for="item in selected.message || []" :key="item.id" :class="{ 'is-me': item.is_me }">{{ item.message }}<small>{{ date(item.created_at, true) }}</small></p></div><textarea v-if="selected.status===0" v-model="reply" rows="4" placeholder="回复内容"/><footer><button v-if="selected.status===0" type="button" class="button secondary" :disabled="saving" @click="closeTicket">关闭工单</button><button v-if="selected.status===0" type="button" class="button primary" :disabled="saving || !reply.trim()" @click="sendReply">回复</button></footer></section></div></PageState></template>
+
+<template>
+  <PageState :loading="loading" :error="error" @retry="load">
+    <div class="page-heading"><div><h1>我的工单</h1><p>{{ content('tickets.description', '和技术支持团队沟通并跟进问题。') }}</p></div><button class="button primary" @click="show = true">新的工单</button></div>
+    <section class="panel list-panel">
+      <article v-for="item in tickets" :key="item.id" role="button" tabindex="0" @click="openTicket(item.id)" @keydown.enter="openTicket(item.id)"><div><strong>{{ item.subject }}</strong><p>{{ latestMessage(item) }}</p></div><div><span :class="['status', item.reply_status === 1 ? 'success' : '']">{{ item.status === 1 ? '已关闭' : item.reply_status === 1 ? '已回复' : '待回复' }}</span><time>{{ date(item.updated_at || item.created_at, true) }}</time></div></article>
+      <div v-if="!tickets.length" class="page-state">暂无工单</div>
+    </section>
+    <div v-if="show" class="modal-backdrop" @click.self="show = false"><form class="modal" @submit.prevent="create"><header><div><h2>新的工单</h2><p>请描述你遇到的问题</p></div><button type="button" class="icon-button" @click="show = false">×</button></header><label>主题<input v-model="form.subject" required /></label><label>等级<select v-model="form.level"><option :value="0">低</option><option :value="1">中</option><option :value="2">高</option></select></label><label>消息<textarea v-model="form.message" rows="5" required /></label><footer><button type="button" class="button secondary" @click="show = false">取消</button><button class="button primary" :disabled="saving">{{ saving ? '正在提交' : '提交' }}</button></footer></form></div>
+    <div v-if="selected" class="modal-backdrop" @click.self="selected = null"><section class="modal"><header><div><h2>{{ selected.subject }}</h2><p>工单 #{{ selected.id }}</p></div><button class="icon-button" @click="selected = null">×</button></header><div class="ticket-messages"><p v-for="item in selected.message || []" :key="item.id" :class="{ 'is-me': item.is_me }">{{ item.message }}<small>{{ date(item.created_at, true) }}</small></p></div><textarea v-if="selected.status === 0" v-model="reply" rows="4" placeholder="回复内容"/><footer><button v-if="selected.status === 0" type="button" class="button secondary" :disabled="saving" @click="closeTicket">关闭工单</button><button v-if="selected.status === 0" type="button" class="button primary" :disabled="saving || !reply.trim()" @click="sendReply">回复</button></footer></section></div>
+  </PageState>
+</template>

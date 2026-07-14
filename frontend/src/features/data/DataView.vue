@@ -10,6 +10,7 @@ import { displayNodeFlag } from '@/shared/catalog'
 import { bytes, date, money } from '@/shared/format'
 import { aggregateTrafficByDay } from '@/shared/traffic'
 import { renderRichText } from '@/shared/rich-text'
+import { content } from '@/shared/content'
 
 const route = useRoute()
 const router = useRouter()
@@ -36,13 +37,13 @@ let knowledgeOpener: HTMLElement | null = null
 let previousBodyOverflow = ''
 const kind = computed(() => String(route.meta.kind))
 
-const meta: Record<string, [string, string]> = {
-  invite: ['我的邀请', '生成邀请码，点击邀请码查看对应的被邀请人信息与返佣记录。'],
-  traffic: ['流量明细', '按日期查看近 14 天的上传、下载与总用量。'],
-  servers: ['节点状态', '实时查看可用节点、倍率与最近心跳。'],
-  knowledge: ['使用文档', '客户端配置、订阅导入与常见问题。'],
-  gifts: ['优惠券', '保存账号优惠券，购买订阅时将自动验证并使用。'],
-}
+const meta = computed<Record<string, [string, string]>>(() => ({
+  invite: ['我的邀请', content('invite.description', '生成邀请码，点击邀请码查看对应的被邀请人信息与返佣记录。')],
+  traffic: ['流量明细', content('traffic.description', '按日期查看近 14 天的上传、下载与总用量。')],
+  servers: ['节点状态', content('servers.description', '实时查看可用节点、倍率与最近心跳。')],
+  knowledge: ['使用文档', content('knowledge.description', '客户端配置、订阅导入与常见问题。')],
+  gifts: ['优惠券', content('gifts.description', '保存账号优惠券，购买订阅时将自动验证并使用。')],
+}))
 
 const loaders: Record<string, () => Promise<any>> = {
   invite: serviceApi.invites,

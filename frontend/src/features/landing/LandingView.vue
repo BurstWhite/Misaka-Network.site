@@ -6,6 +6,7 @@ import { runtimeConfig } from '@/app/config'
 import Icon from '@/shared/Icon.vue'
 import { bytes, money } from '@/shared/format'
 import { displayNodeCode, displayRate, extractRows, stripMarkup } from '@/shared/catalog'
+import { content } from '@/shared/content'
 import type { PublicNode, PublicPlan } from '@/shared/catalog'
 
 const yearly = ref(true)
@@ -18,11 +19,11 @@ const nodes = ref<PublicNode[]>([])
 const plans = ref<PublicPlan[]>([])
 const selectedNodeId = ref<string | number | null>(null)
 
-const features = [
-  ['全球节点', '智能选择更稳定的连接路径，在不同网络环境下保持顺畅。', 'globe'],
-  ['一键订阅', '复制订阅或直接唤起客户端，减少繁琐的手动配置。', 'bolt'],
-  ['用量清晰', '流量、到期时间与在线状态集中呈现，重要信息一眼可见。', 'chart'],
-]
+const features = computed(() => [
+  [content('landing.feature.nodes.title', '全球节点'), content('landing.feature.nodes.description', '智能选择更稳定的连接路径，在不同网络环境下保持顺畅。'), 'globe'],
+  [content('landing.feature.subscribe.title', '一键订阅'), content('landing.feature.subscribe.description', '复制订阅或直接唤起客户端，减少繁琐的手动配置。'), 'bolt'],
+  [content('landing.feature.usage.title', '用量清晰'), content('landing.feature.usage.description', '流量、到期时间与在线状态集中呈现，重要信息一眼可见。'), 'chart'],
+])
 
 const selectedNode = computed(() => nodes.value.find((node) => String(node.id) === String(selectedNodeId.value)) || nodes.value[0] || null)
 const landingStatus = computed(() => {
@@ -140,9 +141,9 @@ onBeforeUnmount(() => observer.value?.disconnect())
     </nav>
 
     <section id="top" class="hero wrap">
-      <div class="hero-badge"><span/> 全新 Misaka 用户中心</div>
-      <h1>连接世界。<br><span>轻盈无界</span></h1>
-      <p>{{ runtimeConfig.description || '可靠、清晰、触手可及的全球网络连接。' }}。从购买套餐到导入订阅，一切都在一个安静而高效的工作台中完成。</p>
+      <div class="hero-badge"><span/> {{ content('landing.hero.badge', '全新 Misaka 用户中心') }}</div>
+      <h1>{{ content('landing.hero.title', '连接世界。') }}<br><span>{{ content('landing.hero.accent', '轻盈无界') }}</span></h1>
+      <p>{{ runtimeConfig.description || '可靠、清晰、触手可及的全球网络连接。' }}。{{ content('landing.hero.suffix', '从购买套餐到导入订阅，一切都在一个安静而高效的工作台中完成。') }}</p>
       <div class="hero-actions"><RouterLink class="pill pill-light" to="/login">立即开始 <span>→</span></RouterLink></div>
       <small>支持主流桌面与移动客户端</small>
     </section>
@@ -187,7 +188,7 @@ onBeforeUnmount(() => observer.value?.disconnect())
     </section>
 
     <section id="features" class="feature-intro wrap reveal">
-      <div><div class="eyebrow"><span/> 核心体验 <em>为连接而生</em></div><h2>复杂留在背后。<br>连接只需一步。</h2><p>Misaka Network 将线路、订阅、设备与支持集中到一个清晰的界面中，让每次连接都简单、透明、可掌控。</p></div>
+      <div><div class="eyebrow"><span/> {{ content('landing.feature.kicker', '核心体验') }} <em>{{ content('landing.feature.tag', '为连接而生') }}</em></div><h2>{{ content('landing.feature.title', '复杂留在背后。') }}<br>{{ content('landing.feature.accent', '连接只需一步。') }}</h2><p>{{ content('landing.feature.description', 'Misaka Network 将线路、订阅、设备与支持集中到一个清晰的界面中，让每次连接都简单、透明、可掌控。') }}</p></div>
       <div class="triage liquid-glass">
         <header><span>公开节点状态</span><small>{{ landingLoading ? '同步中' : nodeError ? '同步失败' : '实时摘要' }}</small></header>
         <article v-for="node in nodes.slice(0, 4)" :key="node.id"><span class="flag">{{ displayNodeCode(node) }}</span><span><b>{{ node.name || '未命名节点' }}</b><small>{{ nodeStatus(node).label }} · {{ String(node.type || '线路').toUpperCase() }}</small></span><span class="triage-status" :class="nodeStatus(node).key">{{ displayRate(node.rate) }}</span></article>
@@ -199,10 +200,10 @@ onBeforeUnmount(() => observer.value?.disconnect())
       <article v-for="feature in features" :key="feature[0]" class="liquid-glass"><div class="feature-icon"><Icon :name="feature[2]" :size="21"/></div><h3>{{ feature[0] }}</h3><p>{{ feature[1] }}</p><span>了解更多 →</span></article>
     </section>
 
-    <section class="protocols wrap reveal"><p>兼容你熟悉的客户端与连接方式</p><div><b>Clash</b><b>Shadowrocket</b><b>v2rayN</b><b>Surge</b><b>Stash</b><b>sing-box</b></div></section>
+    <section class="protocols wrap reveal"><p>{{ content('landing.protocols.title', '兼容你熟悉的客户端与连接方式') }}</p><div><b>Clash</b><b>Shadowrocket</b><b>v2rayN</b><b>Surge</b><b>Stash</b><b>sing-box</b></div></section>
 
     <section id="plans" class="pricing reveal">
-      <div class="pricing-title"><span>选择适合你的连接方式</span><h2>清晰套餐。<br><i>自由抵达</i></h2></div>
+      <div class="pricing-title"><span>{{ content('landing.plans.kicker', '选择适合你的连接方式') }}</span><h2>{{ content('landing.plans.title', '清晰套餐。') }}<br><i>{{ content('landing.plans.accent', '自由抵达') }}</i></h2></div>
       <div v-if="landingLoading" class="landing-data-state">正在读取公开套餐…</div>
       <div v-else-if="planError" class="landing-data-state"><p>{{ planError }}</p><RouterLink to="/login">登录后查看可用套餐 <span>→</span></RouterLink></div>
       <div v-else-if="!plans.length" class="landing-data-state"><p>当前暂无可售套餐。</p><RouterLink to="/login">进入控制台查看 <span>→</span></RouterLink></div>
@@ -216,10 +217,10 @@ onBeforeUnmount(() => observer.value?.disconnect())
     </section>
 
     <section id="support" class="final-cta wrap reveal liquid-glass">
-      <div class="cta-glow"/><div class="logo-mark large"><i/><i/></div><h2>少一点等待。<br>多一点抵达。</h2><p>创建你的 Misaka Network 账户，让可靠连接成为每天最自然的一部分。</p><div><RouterLink class="pill pill-light" to="/register">创建账户 <span>→</span></RouterLink><RouterLink class="pill pill-ghost" to="/login">已有账户</RouterLink></div>
+      <div class="cta-glow"/><div class="logo-mark large"><i/><i/></div><h2>{{ content('landing.cta.title', '少一点等待。') }}<br>{{ content('landing.cta.accent', '多一点抵达。') }}</h2><p>{{ content('landing.cta.description', '创建你的 Misaka Network 账户，让可靠连接成为每天最自然的一部分。') }}</p><div><RouterLink class="pill pill-light" to="/register">创建账户 <span>→</span></RouterLink><RouterLink class="pill pill-ghost" to="/login">已有账户</RouterLink></div>
     </section>
 
-    <footer class="footer wrap"><a class="logo" href="#top" @click.prevent="scrollToSection('top')"><span class="logo-mark small"><i/><i/></span><span>{{ runtimeConfig.appName }}</span></a><p>Reliable global connectivity.</p><span>© {{ new Date().getFullYear() }} Misaka Network</span></footer>
+    <footer class="footer wrap"><a class="logo" href="#top" @click.prevent="scrollToSection('top')"><span class="logo-mark small"><i/><i/></span><span>{{ runtimeConfig.appName }}</span></a><p>{{ content('landing.footer.tagline', 'Reliable global connectivity.') }}</p><span>© {{ new Date().getFullYear() }} {{ runtimeConfig.appName }}</span></footer>
   </main>
 </template>
 

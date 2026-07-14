@@ -4,6 +4,7 @@ import { userApi } from '@/api/services'
 import PageState from '@/shared/PageState.vue'
 import Icon from '@/shared/Icon.vue'
 import { date } from '@/shared/format'
+import { content } from '@/shared/content'
 
 const loading = ref(true)
 const error = ref('')
@@ -76,7 +77,7 @@ onMounted(load)
     </form>
     <p v-if="message" class="form-message success">{{ message }}</p>
     <section class="panel sessions-panel">
-      <header><div><h2>最近登录设备</h2><p>管理当前账号的活跃会话</p></div><span class="session-count">{{ sessions.length }} 台设备</span></header>
+      <header><div><h2>最近登录设备</h2><p>{{ content('profile.sessions.description', '管理当前账号的活跃会话') }}</p></div><span class="session-count">{{ sessions.length }} 台设备</span></header>
       <div class="session-list"><article v-for="session in sessions" :key="session.id" class="session-row"><div class="session-device"><span class="session-icon"><Icon name="monitor" :size="18" /></span><div><strong>{{ session.device || '历史会话' }} <em v-if="session.current" class="current-session">当前设备</em></strong><small><span v-if="session.current" class="session-online" />{{ session.ip || '历史记录未保存 IP' }}</small></div></div><div class="session-meta"><span><small>最后活动</small><time>{{ date(session.last_login_at || session.created_at, true) }}</time></span><button class="session-remove" type="button" @click="removeSession(session.id)"><Icon name="x" :size="14" />移除</button></div></article></div>
       <div v-if="!sessions.length" class="page-state">暂无活跃设备</div>
     </section>

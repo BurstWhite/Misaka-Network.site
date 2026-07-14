@@ -87,6 +87,8 @@ Route::get('/', function (Request $request) {
         }
 
         $themeConfig = $themeService->getConfig($theme) ?? [];
+        $content = json_decode((string) ($themeConfig['content_json'] ?? '{}'), true);
+        $content = is_array($content) ? array_filter($content, 'is_string') : [];
         $runtimeVersion = app(UpdateService::class)->getCurrentVersion();
         if (str_ends_with($runtimeVersion, '-unknown')) {
             $runtimeVersion = (string) config('app.version', $runtimeVersion);
@@ -103,6 +105,7 @@ Route::get('/', function (Request $request) {
                 'primaryColor' => $themeConfig['primary_color'] ?? '#3155ee',
                 'backgroundUrl' => $themeConfig['background_url'] ?? '',
             ],
+            'content' => empty($content) ? new \stdClass() : $content,
             // Keep the runtime contract object-shaped; the frontend treats this as a feature map.
             'features' => new \stdClass(),
         ];

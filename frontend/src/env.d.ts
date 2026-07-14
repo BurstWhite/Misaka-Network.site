@@ -9,6 +9,7 @@ interface MisakaRuntimeConfig {
   version: string
   supportedLocales: string[]
   theme: { primaryColor: string; backgroundUrl?: string }
+  content: Record<string, string>
   features: Record<string, boolean>
 }
 

@@ -1,5 +1,53 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'; import { commerceApi } from '@/api/services'; import PageState from '@/shared/PageState.vue'; import { date, money, orderStatus } from '@/shared/format'
-const loading=ref(true),error=ref(''),orders=ref<any[]>([]);async function load(){loading.value=true;error.value='';try{const r=await commerceApi.orders();orders.value=Array.isArray(r)?r:r?.data||[]}catch(e:any){error.value=e.message}finally{loading.value=false}} async function cancel(id:string){if(!confirm('确认取消该订单？'))return;try{await commerceApi.cancelOrder(id);await load()}catch(e:any){error.value=e.message}}onMounted(load)
+import { onMounted, ref } from 'vue'
+import { commerceApi } from '@/api/services'
+import PageState from '@/shared/PageState.vue'
+import { content } from '@/shared/content'
+import { date, money, orderStatus } from '@/shared/format'
+
+const loading = ref(true)
+const error = ref('')
+const orders = ref<any[]>([])
+
+async function load() {
+  loading.value = true
+  error.value = ''
+  try {
+    const result = await commerceApi.orders()
+    orders.value = Array.isArray(result) ? result : result?.data || []
+  } catch (e: any) {
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+}
+
+async function cancel(id: string) {
+  if (!confirm('确认取消该订单？')) return
+  try {
+    await commerceApi.cancelOrder(id)
+    await load()
+  } catch (e: any) {
+    error.value = e.message
+  }
+}
+
+onMounted(load)
 </script>
-<template><PageState :loading="loading" :error="error" @retry="load"><div class="page-heading"><div><h1>我的订单</h1><p>查看订单状态、付款信息和历史记录。</p></div></div><section class="panel"><div class="table-wrap"><table><thead><tr><th>订单号</th><th>套餐</th><th>周期</th><th>金额</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead><tbody><tr v-for="order in orders" :key="order.trade_no"><td>#{{order.trade_no}}</td><td>{{order.plan?.name||order.plan_name||'-'}}</td><td>{{order.period||'-'}}</td><td>{{money(order.total_amount??order.total)}}</td><td><span class="status">{{orderStatus(order.status)}}</span></td><td>{{date(order.created_at,true)}}</td><td><RouterLink :to="`/order/${order.trade_no}`">详情</RouterLink><button v-if="Number(order.status)===0" class="link-button danger" @click="cancel(order.trade_no)">取消</button></td></tr><tr v-if="!orders.length"><td colspan="7" class="empty-cell">暂无订单</td></tr></tbody></table></div></section></PageState></template>
+
+<template>
+  <PageState :loading="loading" :error="error" @retry="load">
+    <div class="page-heading"><div><h1>我的订单</h1><p>{{ content('orders.description', '查看订单状态、付款信息和历史记录。') }}</p></div></div>
+    <section class="panel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>订单号</th><th>套餐</th><th>周期</th><th>金额</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr v-for="order in orders" :key="order.trade_no"><td>#{{ order.trade_no }}</td><td>{{ order.plan?.name || order.plan_name || '-' }}</td><td>{{ order.period || '-' }}</td><td>{{ money(order.total_amount ?? order.total) }}</td><td><span class="status">{{ orderStatus(order.status) }}</span></td><td>{{ date(order.created_at, true) }}</td><td><RouterLink :to="`/order/${order.trade_no}`">详情</RouterLink><button v-if="Number(order.status) === 0" class="link-button danger" @click="cancel(order.trade_no)">取消</button></td></tr>
+            <tr v-if="!orders.length"><td colspan="7" class="empty-cell">暂无订单</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </PageState>
+</template>
