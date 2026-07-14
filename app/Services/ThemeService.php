@@ -3,8 +3,11 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Str;
 use Illuminate\Http\UploadedFile;
 use Exception;
 use ZipArchive;
@@ -16,6 +19,8 @@ class ThemeService
     private const CONFIG_FILE = 'config.json';
     private const SETTING_PREFIX = 'theme_';
     private const SYSTEM_THEMES = ['Xboard', 'v2board', 'Misaka'];
+    private const PUBLICATION_LOCK = 'theme_publication';
+    private const PUBLICATION_MARKER = '.published-version';
 
     public function __construct()
     {
@@ -190,34 +195,154 @@ class ThemeService
             return true;
         }
 
-        $currentTheme = admin_setting('current_theme');
-
         try {
-            $themePath = $this->getThemePath($theme);
-            if (!$themePath) {
-                throw new Exception('Theme not found');
-            }
+            return Cache::lock(self::PUBLICATION_LOCK, 60)
+                ->block(10, fn() => $this->publishTheme($theme));
 
-            if (!File::exists($this->getThemeViewPath($theme))) {
-                throw new Exception('Theme view file not found');
-            }
-
-            if ($currentTheme && $currentTheme !== $theme) {
-                $this->cleanupThemeFiles($currentTheme);
-            }
-
-            $targetPath = public_path('theme/' . $theme);
-            if (!File::copyDirectory($themePath, $targetPath)) {
-                throw new Exception('Failed to copy theme files');
-            }
-
-            admin_setting(['current_theme' => $theme]);
-            return true;
-
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Theme switch failed', ['theme' => $theme, 'error' => $e->getMessage()]);
             throw $e;
         }
+    }
+
+    /**
+     * Resolve the configured frontend theme, including legacy installations.
+     */
+    public function resolveCurrentTheme(): string
+    {
+        return (string) (admin_setting('frontend_theme') ?: admin_setting('current_theme') ?: 'Xboard');
+    }
+
+    /**
+     * Determine whether the public copy was fully published for this build.
+     */
+    public function isPublished(string $theme): bool
+    {
+        $targetPath = public_path('theme/' . $theme);
+        $markerPath = $targetPath . '/' . self::PUBLICATION_MARKER;
+
+        return $this->hasRequiredPublicFiles($theme, $targetPath)
+            && File::isFile($markerPath)
+            && hash_equals($this->publicationVersion($theme), trim(File::get($markerPath)));
+    }
+
+    /**
+     * Publish a complete theme copy while the publication lock is held.
+     */
+    private function publishTheme(string $theme): bool
+    {
+        $themePath = $this->getThemePath($theme);
+        if (!$themePath) {
+            throw new Exception('Theme not found');
+        }
+
+        if (!File::isFile($themePath . '/dashboard.blade.php')) {
+            throw new Exception('Theme view file not found');
+        }
+
+        $currentTheme = admin_setting('current_theme');
+        $publicRoot = public_path('theme');
+        File::ensureDirectoryExists($publicRoot, 0755, true);
+
+        $suffix = Str::uuid()->toString();
+        $targetPath = $publicRoot . '/' . $theme;
+        $stagingPath = $publicRoot . '/.' . $theme . '.staging-' . $suffix;
+        $backupPath = $publicRoot . '/.' . $theme . '.backup-' . $suffix;
+        $hadTarget = File::isDirectory($targetPath);
+        $swapped = false;
+        $committed = false;
+
+        try {
+            if (!File::copyDirectory($themePath, $stagingPath)) {
+                throw new Exception('Failed to copy theme files');
+            }
+
+            if (!$this->hasRequiredPublicFiles($theme, $stagingPath)) {
+                throw new Exception('Published theme is incomplete');
+            }
+
+            if (File::put($stagingPath . '/' . self::PUBLICATION_MARKER, $this->publicationVersion($theme)) === false) {
+                throw new Exception('Failed to write theme publication marker');
+            }
+
+            if ($hadTarget && !File::moveDirectory($targetPath, $backupPath)) {
+                throw new Exception('Failed to preserve current theme files');
+            }
+
+            if (!File::moveDirectory($stagingPath, $targetPath)) {
+                throw new Exception('Failed to publish theme files');
+            }
+            $swapped = true;
+
+            DB::transaction(fn() => admin_setting([
+                'frontend_theme' => $theme,
+                'current_theme' => $theme,
+            ]));
+            $committed = true;
+
+            try {
+                if ($hadTarget) {
+                    File::deleteDirectory($backupPath);
+                }
+                if ($currentTheme && $currentTheme !== $theme) {
+                    $this->cleanupThemeFiles($currentTheme);
+                }
+                cache()->forget("theme_{$theme}_assets");
+            } catch (\Throwable $e) {
+                Log::warning('Theme published with cleanup warning', [
+                    'theme' => $theme,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            if (File::isDirectory($stagingPath)) {
+                File::deleteDirectory($stagingPath);
+            }
+            if (!$committed && $swapped && File::isDirectory($targetPath)) {
+                File::deleteDirectory($targetPath);
+            }
+            if (!$committed && File::isDirectory($backupPath) && !File::moveDirectory($backupPath, $targetPath)) {
+                Log::critical('Failed to restore theme after publication error', ['theme' => $theme]);
+            }
+            throw $e;
+        }
+    }
+
+    private function hasRequiredPublicFiles(string $theme, string $path): bool
+    {
+        if (!File::isFile($path . '/config.json') || !File::isFile($path . '/dashboard.blade.php')) {
+            return false;
+        }
+
+        $viewPath = $this->getThemeViewPath($theme);
+        if (!$viewPath || !File::isFile($viewPath)) {
+            return false;
+        }
+
+        preg_match_all('~assets/[A-Za-z0-9._/-]+\.(?:css|js)~', File::get($viewPath), $matches);
+        foreach (array_unique($matches[0]) as $asset) {
+            if (!File::isFile($path . '/' . $asset)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function publicationVersion(string $theme): string
+    {
+        $themePath = $this->getThemePath($theme);
+        $manifestPath = $themePath ? $themePath . '/assets/.vite/manifest.json' : null;
+
+        return hash('sha256', implode('|', [
+            (string) config('app.version', 'unknown'),
+            $theme,
+            $themePath && File::isFile($themePath . '/config.json') ? hash_file('sha256', $themePath . '/config.json') : '',
+            $themePath && File::isFile($themePath . '/dashboard.blade.php') ? hash_file('sha256', $themePath . '/dashboard.blade.php') : '',
+            $manifestPath && File::isFile($manifestPath) ? hash_file('sha256', $manifestPath) : '',
+        ]));
     }
 
     /**
@@ -374,30 +499,19 @@ class ThemeService
      */
     public function refreshCurrentTheme(): bool
     {
+        $theme = null;
+
         try {
-            $currentTheme = admin_setting('current_theme');
-            if (!$currentTheme) {
-                return false;
-            }
+            $result = Cache::lock(self::PUBLICATION_LOCK, 60)->block(10, function () use (&$theme): bool {
+                $theme = $this->resolveCurrentTheme();
+                return $this->publishTheme($theme);
+            });
+            Log::info('Refreshed current theme files', ['theme' => $theme]);
+            return $result;
 
-            $this->cleanupThemeFiles($currentTheme);
-
-            $themePath = $this->getThemePath($currentTheme);
-            if (!$themePath) {
-                throw new Exception('Current theme path not found');
-            }
-
-            $targetPath = public_path('theme/' . $currentTheme);
-            if (!File::copyDirectory($themePath, $targetPath)) {
-                throw new Exception('Failed to copy theme files');
-            }
-
-            Log::info('Refreshed current theme files', ['theme' => $currentTheme]);
-            return true;
-
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Failed to refresh current theme', [
-                'theme' => $currentTheme,
+                'theme' => $theme,
                 'error' => $e->getMessage()
             ]);
             return false;

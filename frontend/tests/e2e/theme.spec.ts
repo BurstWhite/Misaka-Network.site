@@ -94,6 +94,7 @@ test('renders backend plans, scrollable rich notices, status help, and real sess
   await page.getByRole('button', { name: '验证', exact: true }).click()
   await expect(page.locator('.coupon-preview')).toContainText('夏日八折券')
   await expect(page.locator('.coupon-preview')).toContainText('优惠后 ¥ 24.00')
+  await page.locator('.plan-modal .icon-button').click()
 
   await navigate(page, '/profile')
   await expect(page.locator('.session-row')).toContainText('Safari · macOS')

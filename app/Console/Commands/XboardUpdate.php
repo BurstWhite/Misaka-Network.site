@@ -57,7 +57,10 @@ class XboardUpdate extends Command
         $updateService = new UpdateService();
         $updateService->updateVersionCache();
         $themeService = app(ThemeService::class);
-        $themeService->refreshCurrentTheme();
+        if (!$themeService->refreshCurrentTheme()) {
+            $this->error('当前前台主题发布失败。');
+            return self::FAILURE;
+        }
         if (config('queue.default') === 'sync') {
             $this->info('horizon:terminate skipped (sync queue, no workers to terminate).');
         } else {
@@ -68,5 +71,6 @@ class XboardUpdate extends Command
             }
         }
         $this->info('更新完毕，队列服务已重启，你无需进行任何操作。');
+        return self::SUCCESS;
     }
 }

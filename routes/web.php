@@ -60,29 +60,29 @@ Route::get('/', function (Request $request) {
         }
     }
 
-    $theme = admin_setting('frontend_theme', 'Xboard');
     $themeService = new ThemeService();
+    $theme = $themeService->resolveCurrentTheme();
 
     try {
-        if (!$themeService->exists($theme)) {
+        $themeViewPath = $themeService->getThemeViewPath($theme);
+        if (!$themeService->exists($theme) || !$themeViewPath || !File::isFile($themeViewPath)) {
             if ($theme !== 'Xboard') {
                 Log::warning('Theme not found, switching to default theme', ['theme' => $theme]);
                 $theme = 'Xboard';
                 admin_setting(['frontend_theme' => $theme]);
             }
-            $themeService->switch($theme);
         }
 
-        if (!$themeService->getThemeViewPath($theme)) {
+        $themeViewPath = $themeService->getThemeViewPath($theme);
+        if (!$themeViewPath || !File::isFile($themeViewPath)) {
             throw new Exception('主题视图文件不存在');
         }
 
-        $publicThemePath = public_path('theme/' . $theme);
-        if (!File::exists($publicThemePath)) {
-            $themePath = $themeService->getThemePath($theme);
-            if (!$themePath || !File::copyDirectory($themePath, $publicThemePath)) {
+        if (admin_setting('current_theme') !== $theme || !$themeService->isPublished($theme)) {
+            if (!$themeService->refreshCurrentTheme()) {
                 throw new Exception('主题初始化失败');
             }
+            $theme = $themeService->resolveCurrentTheme();
             Log::info('Theme initialized in public directory', ['theme' => $theme]);
         }
 
