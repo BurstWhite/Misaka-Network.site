@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { authApi, userApi } from '@/api/services'
 import { clearToken, readToken, saveToken } from './auth-token'
 
+let userLoadPromise: Promise<boolean> | null = null
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({ user: null as any, config: null as any, loading: false }),
   getters: { authenticated: () => Boolean(readToken()) },
@@ -25,7 +27,12 @@ export const useAuthStore = defineStore('auth', {
     },
     async loadUser() {
       if (!readToken()) return false
-      try { this.user = await userApi.info(); return true } catch { clearToken(); this.user = null; return false }
+      if (userLoadPromise) return userLoadPromise
+      this.loading = true
+      userLoadPromise = (async () => {
+        try { this.user = await userApi.info(); return true } catch { clearToken(); this.user = null; return false }
+      })()
+      try { return await userLoadPromise } finally { userLoadPromise = null; this.loading = false }
     },
     logout() { clearToken(); this.user = null },
   },

@@ -2,6 +2,8 @@ import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
 
+let userInfoRequests = 0
+
 async function navigate(page: Page, href: string) {
   const menu = page.locator('.mobile-menu')
   if (await menu.isVisible()) {
@@ -14,6 +16,7 @@ async function navigate(page: Page, href: string) {
 }
 
 test.beforeEach(async ({ page }) => {
+  userInfoRequests = 0
   await page.addInitScript(() => { localStorage.setItem('misaka.access_token', 'test-token'); (window as any).__noticeXss = 0 })
   await page.route('**/assets/flags/*.svg', async (route) => {
     const filename = basename(new URL(route.request().url()).pathname)
@@ -23,7 +26,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/api/v1/**', async (route) => {
     const url = route.request().url()
     let data: any = []
-    if (url.includes('/user/info')) data = { email: 'user@example.com', plan: { name: '标准套餐' }, transfer_enable: 536870912000, expired_at: 1783700000 }
+    if (url.includes('/user/info')) { userInfoRequests += 1; data = { email: 'user@example.com', plan: { name: '标准套餐' }, transfer_enable: 536870912000, expired_at: 1783700000 } }
     else if (url.includes('/getSubscribe')) data = { u: 10737418240, d: 21474836480, transfer_enable: 536870912000, subscribe_url: 'https://example.com/sub', expired_at: 1783700000, next_reset_at: 1781108000, plan: { name: '标准套餐', transfer_enable: 500, speed_limit: 300, device_limit: 5, content: '### 套餐权益\n\n- 全球节点\n- 流媒体解锁' } }
     else if (url.includes('/getTrafficLog')) data = Array.from({ length: 20 }, (_, index) => ({ record_at: Math.floor(Date.now() / 86400000) * 86400 - (19 - index) * 86400, u: (index + 1) * 107374182, d: (index + 2) * 107374182 }))
     else if (url.includes('/notice/fetch')) data = [{ id: 1, title: '欢迎使用', created_at: 1780500000, content: `### 服务说明\n\n**安全内容**\n\n<script>window.__noticeXss=1</script><a href="javascript:window.__noticeXss=2" onclick="window.__noticeXss=3">不安全链接</a>\n\n${'公告正文。\n\n'.repeat(80)}` }]
@@ -58,6 +61,7 @@ test.beforeEach(async ({ page }) => {
 
 test('switches theme modes and persists selection', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  expect(userInfoRequests).toBe(1)
   await page.getByRole('button', { name: '外观主题' }).click()
   await page.getByRole('button', { name: '暗色' }).click()
   await expect(page.locator('html')).toHaveClass(/dark/)

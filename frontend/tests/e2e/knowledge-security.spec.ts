@@ -5,6 +5,10 @@ test('knowledge content removes executable markup', async ({ page }) => {
     localStorage.setItem('misaka.access_token', 'test-token')
     ;(window as any).__knowledgeXss = 0
   })
+  await page.route('https://example.com/guide.png', (route) => route.fulfill({
+    contentType: 'image/svg+xml',
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>',
+  }))
 
   await page.route('**/api/v1/**', async (route) => {
     const path = new URL(route.request().url()).pathname
@@ -15,7 +19,7 @@ test('knowledge content removes executable markup', async ({ page }) => {
             category: '安全',
             title: '安全指南',
             updated_at: 1_700_000_000,
-            body: '<script>window.__knowledgeXss=1</script><svg onload="window.__knowledgeXss=2"></svg><p><br></p><ul><li>正常列表</li></ul><p>&nbsp;</p><ul><li>第二行</li></ul><a href="javascript:window.__knowledgeXss=3" onclick="window.__knowledgeXss=4">链接</a><strong>正常内容</strong>',
+            body: '<script>window.__knowledgeXss=1</script><svg onload="window.__knowledgeXss=2"></svg><p><br></p><ul><li>正常列表</li></ul><p>&nbsp;</p><ul><li>第二行</li></ul><a href="javascript:window.__knowledgeXss=3" onclick="window.__knowledgeXss=4">链接</a><img src="https://example.com/guide.png" alt="教程截图"><strong>正常内容</strong>',
           }],
         }
       : path.endsWith('/user/info')
@@ -35,5 +39,7 @@ test('knowledge content removes executable markup', async ({ page }) => {
   await expect(modal.locator('.knowledge-modal-body ul')).toHaveCount(1)
   await expect(modal.locator('.knowledge-modal-body ul ul')).toHaveCount(0)
   await expect(modal.locator('.knowledge-modal-body a', { hasText: '链接' })).not.toHaveAttribute('href')
+  await expect(modal.getByRole('img', { name: '教程截图' })).toHaveAttribute('loading', 'lazy')
+  await expect(modal.getByRole('img', { name: '教程截图' })).toHaveAttribute('decoding', 'async')
   await expect.poll(() => page.evaluate(() => (window as any).__knowledgeXss)).toBe(0)
 })

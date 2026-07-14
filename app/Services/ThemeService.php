@@ -323,7 +323,11 @@ class ThemeService
             }
             $manifest = json_decode(File::get($manifestPath), true);
             $entry = is_array($manifest) ? ($manifest['src/main.ts']['file'] ?? null) : null;
+            $entryCss = is_array($manifest) ? ($manifest['src/main.ts']['css'][0] ?? null) : null;
             if (!is_string($entry) || !preg_match('/^app-[A-Za-z0-9_-]+\.js$/', $entry) || !File::isFile($path . '/assets/' . $entry)) {
+                return false;
+            }
+            if (!is_string($entryCss) || !preg_match('~^assets/[A-Za-z0-9._-]+\.css$~', $entryCss) || !File::isFile($path . '/assets/' . $entryCss)) {
                 return false;
             }
         }

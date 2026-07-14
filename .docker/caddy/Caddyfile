@@ -14,22 +14,46 @@
 		format console
 	}
 	servers {
-		trusted_proxies static 0.0.0.0/0 ::/0
+		trusted_proxies static private_ranges
 	}
 }
 
 :{$CADDY_LISTEN_PORT:7001} {
-	@ws path /ws
-	reverse_proxy @ws 127.0.0.1:{$WS_PORT:8076}
+	root * /www/public
 
-	reverse_proxy 127.0.0.1:{$OCTANE_INTERNAL_PORT:7002} {
-		header_up Host {host}
-		# X-Forwarded-For is auto-appended with our remote_addr by Caddy
-		# (enabled by the global trusted_proxies above), so Octane receives the
-		# full proxy chain and Laravel's TrustProxies middleware resolves the
-		# real client IP using its own trust list. We additionally surface the
-		# directly-connected peer as X-Real-IP for downstream consumers (logs,
-		# admin tools) that read it directly without TrustProxies.
-		header_up X-Real-IP {remote_host}
+	@ws path /ws
+	handle @ws {
+		reverse_proxy 127.0.0.1:{$WS_PORT:8076}
+	}
+
+	# Keep static delivery outside PHP. The file matcher prevents missing assets
+	# from bypassing Laravel's normal 404 handling, while the extension matcher
+	# excludes executable files even if they exist below public/.
+	@static {
+		path_regexp static (?i)\.(?:css|js|mjs|map|png|jpe?g|gif|ico|svg|webp|avif|woff2?|ttf|eot)$
+		file
+	}
+	@immutable {
+		path_regexp immutable ^/theme/[^/]+/assets/(?:app-[^/]+\.js|chunks/[^/]+-[^/]+\.js|assets/[^/]+-[^/]+\.(?:css|js|mjs|map|png|jpe?g|gif|ico|svg|webp|avif|woff2?|ttf|eot))$
+		file
+	}
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+	header @static X-Content-Type-Options "nosniff"
+	handle @static {
+		encode zstd gzip
+		file_server
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:{$OCTANE_INTERNAL_PORT:7002} {
+			header_up Host {host}
+			# X-Forwarded-For is auto-appended with our remote_addr by Caddy
+			# (enabled by the global trusted_proxies above), so Octane receives the
+			# full proxy chain and Laravel's TrustProxies middleware resolves the
+			# real client IP using its own trust list. We additionally surface the
+			# directly-connected peer as X-Real-IP for downstream consumers (logs,
+			# admin tools) that read it directly without TrustProxies.
+			header_up X-Real-IP {remote_host}
+		}
 	}
 }

@@ -25,8 +25,10 @@ export function sanitizeHtml(value: string): string {
       element.target = '_blank'
       element.rel = 'noopener noreferrer'
     }
-    if (element instanceof HTMLImageElement && !isSafeUrl(element.getAttribute('src'), ['http:', 'https:'])) {
-      element.removeAttribute('src')
+    if (element instanceof HTMLImageElement) {
+      if (!isSafeUrl(element.getAttribute('src'), ['http:', 'https:'])) element.removeAttribute('src')
+      element.loading = 'lazy'
+      element.decoding = 'async'
     }
   }
 

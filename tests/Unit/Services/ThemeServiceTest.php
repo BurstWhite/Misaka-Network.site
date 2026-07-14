@@ -39,6 +39,7 @@ class ThemeServiceTest extends TestCase
         $this->assertStringContainsString('{!! $runtime_config_json !!}', $view);
         $this->assertStringNotContainsString('@json(', $view);
         $this->assertStringContainsString('assets/{{ $entry_asset }}', $view);
+        $this->assertStringContainsString('assets/{{ $entry_css }}', $view);
         $this->assertStringNotContainsString('assets/app.js?v=', $view);
     }
 
@@ -71,8 +72,11 @@ class ThemeServiceTest extends TestCase
             $this->assertTrue($service->refreshCurrentTheme());
             $manifest = json_decode(file_get_contents($testPublicPath . '/theme/Misaka/assets/.vite/manifest.json'), true);
             $entry = $manifest['src/main.ts']['file'];
+            $entryCss = $manifest['src/main.ts']['css'][0];
             $this->assertMatchesRegularExpression('/^app-[A-Za-z0-9_-]+\.js$/', $entry);
+            $this->assertMatchesRegularExpression('~^assets/[A-Za-z0-9._-]+\.css$~', $entryCss);
             $this->assertFileExists($testPublicPath . '/theme/Misaka/assets/' . $entry);
+            $this->assertFileExists($testPublicPath . '/theme/Misaka/assets/' . $entryCss);
             $this->assertFileDoesNotExist($testPublicPath . '/theme/Misaka/stale.js');
             $this->assertTrue($service->isPublished('Misaka'));
             File::delete($testPublicPath . '/theme/Misaka/assets/' . $entry);

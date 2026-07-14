@@ -11,8 +11,10 @@ import { bytes, date, money, orderStatus } from '@/shared/format'
 import { renderRichText } from '@/shared/rich-text'
 import { content } from '@/shared/content'
 import { aggregateTrafficByDay } from '@/shared/traffic'
+import { useAuthStore } from '@/stores/auth'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const loading = ref(true)
 const error = ref('')
 const user = ref<any>({})
@@ -39,15 +41,15 @@ async function load() {
   chartFocus.value = 0
   chartHover.value = false
   try {
-    const [u, s, n, o, tr, sv] = await Promise.all([
-      userApi.info(),
+    const [, s, n, o, tr, sv] = await Promise.all([
+      auth.loadUser(),
       userApi.subscribe(),
       serviceApi.notices().catch(() => []),
       commerceApi.orders().catch(() => []),
       serviceApi.traffic({ days: 7 }).catch(() => []),
       serviceApi.servers().catch(() => []),
     ])
-    user.value = u || {}
+    user.value = auth.user || {}
     subscribe.value = s || {}
     notices.value = Array.isArray(n) ? n : []
     orders.value = Array.isArray(o) ? o : o?.data || []

@@ -111,12 +111,24 @@ Route::get('/', function (Request $request) {
         ];
 
         $entryAsset = 'app.js';
+        $entryCss = 'app.css';
+        $modulePreloads = [];
         if ($theme === 'Misaka') {
             $manifestPath = $themeService->getThemePath($theme) . '/assets/.vite/manifest.json';
             $manifest = File::isFile($manifestPath) ? json_decode(File::get($manifestPath), true) : null;
             $entryAsset = is_array($manifest) ? ($manifest['src/main.ts']['file'] ?? null) : null;
+            $entryCss = is_array($manifest) ? ($manifest['src/main.ts']['css'][0] ?? null) : null;
             if (!is_string($entryAsset) || !preg_match('/^app-[A-Za-z0-9_-]+\.js$/', $entryAsset)) {
                 throw new Exception('Misaka 主题入口文件无效');
+            }
+            if (!is_string($entryCss) || !preg_match('~^assets/[A-Za-z0-9._-]+\.css$~', $entryCss)) {
+                throw new Exception('Misaka 主题样式文件无效');
+            }
+            foreach ($manifest['src/main.ts']['imports'] ?? [] as $import) {
+                $file = $manifest[$import]['file'] ?? null;
+                if (is_string($file) && preg_match('~^chunks/[A-Za-z0-9._-]+\.js$~', $file)) {
+                    $modulePreloads[] = $file;
+                }
             }
         }
 
@@ -128,6 +140,8 @@ Route::get('/', function (Request $request) {
             'logo' => admin_setting('logo'),
             'theme_config' => $themeConfig,
             'entry_asset' => $entryAsset,
+            'entry_css' => $entryCss,
+            'module_preloads' => array_values(array_unique($modulePreloads)),
             // Encode outside the Blade directive parser. This also keeps closing
             // script tags and quotes from custom settings inert inside JavaScript.
             'runtime_config_json' => json_encode(
