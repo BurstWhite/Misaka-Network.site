@@ -18,6 +18,8 @@ const nodeError = ref('')
 const nodes = ref<PublicNode[]>([])
 const plans = ref<PublicPlan[]>([])
 const selectedNodeId = ref<string | number | null>(null)
+const videoSrc = ref('')
+const backgroundVideo = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4'
 
 const features = computed(() => [
   [content('landing.feature.nodes.title', '全球节点'), content('landing.feature.nodes.description', '智能选择更稳定的连接路径，在不同网络环境下保持顺畅。'), 'globe'],
@@ -110,20 +112,29 @@ function isFeaturedPlan(plan: PublicPlan): boolean {
   return (Array.isArray(plan.tags) ? plan.tags : []).some((tag) => /推荐|featured/i.test(String(tag)))
 }
 
+function loadBackgroundVideo() {
+  videoSrc.value = backgroundVideo
+}
+
 onMounted(() => {
   observer.value = new IntersectionObserver((entries) => {
     entries.forEach((entry) => entry.isIntersecting && entry.target.classList.add('is-visible'))
   }, { threshold: 0.12 })
   document.querySelectorAll('.landing .reveal').forEach((element) => observer.value?.observe(element))
+  if (document.readyState === 'complete') loadBackgroundVideo()
+  else window.addEventListener('load', loadBackgroundVideo, { once: true })
   void loadCatalog()
 })
-onBeforeUnmount(() => observer.value?.disconnect())
+onBeforeUnmount(() => {
+  observer.value?.disconnect()
+  window.removeEventListener('load', loadBackgroundVideo)
+})
 </script>
 
 <template>
   <main class="landing">
     <div class="ambient" aria-hidden="true">
-      <video autoplay loop muted playsinline src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4" />
+      <video v-if="videoSrc" autoplay loop muted playsinline preload="none" :src="videoSrc" />
       <div class="ambient-shade" />
     </div>
     <div class="guide guide-left" aria-hidden="true" /><div class="guide guide-right" aria-hidden="true" />
