@@ -38,6 +38,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $commission_type 返佣类型
  * @property int|null $device_limit 设备限制数量
  * @property int|null $discount 折扣
+ * @property int|null $saved_coupon_id 保存的优惠券ID
  * @property int|null $last_login_at 最后登录时间
  * @property int|null $parent_id 父账户ID
  * @property int|null $is_admin 是否管理员
@@ -51,6 +52,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * @property-read User|null $invite_user 邀请人信息
  * @property-read \App\Models\Plan|null $plan 用户订阅计划
+ * @property-read Coupon|null $savedCoupon 保存的优惠券
  * @property-read ServerGroup|null $group 权限组
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InviteCode> $codes 邀请码列表
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders 订单列表
@@ -78,6 +80,7 @@ class User extends Authenticatable
         'commission_rate' => 'float',
         'next_reset_at' => 'timestamp',
         'last_reset_at' => 'timestamp',
+        'saved_coupon_id' => 'integer',
     ];
     protected $hidden = ['password'];
 
@@ -112,6 +115,11 @@ class User extends Authenticatable
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class, 'plan_id', 'id');
+    }
+
+    public function savedCoupon(): BelongsTo
+    {
+        return $this->belongsTo(Coupon::class, 'saved_coupon_id', 'id');
     }
 
     public function group(): BelongsTo

@@ -13,6 +13,7 @@ async function navigate(page: Page, href: string) {
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => { localStorage.setItem('misaka.access_token', 'test-token'); (window as any).__noticeXss = 0 })
+  let savedCoupon: any = null
   await page.route('**/api/v1/**', async (route) => {
     const url = route.request().url()
     let data: any = []
@@ -21,9 +22,12 @@ test.beforeEach(async ({ page }) => {
     else if (url.includes('/getTrafficLog')) data = Array.from({ length: 20 }, (_, index) => ({ record_at: Math.floor(Date.now() / 86400000) * 86400 - (19 - index) * 86400, u: (index + 1) * 107374182, d: (index + 2) * 107374182 }))
     else if (url.includes('/notice/fetch')) data = [{ id: 1, title: '欢迎使用', created_at: 1780500000, content: `### 服务说明\n\n**安全内容**\n\n<script>window.__noticeXss=1</script><a href="javascript:window.__noticeXss=2" onclick="window.__noticeXss=3">不安全链接</a>\n\n${'公告正文。\n\n'.repeat(80)}` }]
     else if (url.includes('/plan/fetch')) data = [{ id: 1, name: 'Premium', month_price: 3000, transfer_enable: 200, speed_limit: 1000, device_limit: 10, content: '#### 📦 套餐详情\n\n- **流量**：200 GB / 月\n- **速度限制**：1000 Mbps\n- **同时在线设备**：最多 **10 台**\n\n#### 🌟 为什么推荐给你？\n\n适合经常下载大型游戏的用户。' }]
+    else if (url.includes('/coupon/saved')) data = savedCoupon
+    else if (url.includes('/coupon/save')) data = savedCoupon = { id: 1, code: 'SAVE20', name: '夏日八折券', type: 2, value: 20, ended_at: 1783700000 }
+    else if (url.includes('/coupon/remove')) { savedCoupon = null; data = true }
     else if (url.includes('/coupon/check')) data = { code: 'SAVE20', name: '夏日八折券', type: 2, value: 20, ended_at: 1783700000 }
     else if (url.includes('/getActiveSession')) data = [{ id: 1, device: 'Safari · macOS', ip: '203.0.113.42', current: true, last_login_at: 1780500000 }]
-    else if (url.includes('/server/fetch')) data = [{ id: 1, name: '香港 HKG 01', type: 'Shadowsocks', rate: 1, is_online: true, last_check_at: Math.floor(Date.now() / 1000), tags: ['香港', 'BGP'] }, { id: 2, name: '东京 NRT 02', type: 'VLESS', rate: 1.5, is_online: false, last_check_at: 1780500000, tags: ['日本'] }]
+    else if (url.includes('/server/fetch')) data = [{ id: 1, name: '香港 HKG 01', type: 'Shadowsocks', rate: 1, is_online: true, last_check_at: Math.floor(Date.now() / 1000), tags: ['香港', 'BGP'] }, { id: 2, name: '东京 NRT 02', type: 'VLESS', rate: 1.5, is_online: false, last_check_at: '1780500000', tags: ['日本'] }]
     else if (url.includes('/invite/fetch')) data = { codes: [{ code: 'DEMO2026', pv: 3, status: 0, created_at: 1780500000 }], stat: [2, 1200, 0, 10, 1200] }
     else if (url.includes('/invite/details')) data = { data: [{ id: 1, trade_no: 'T20260712001', order_amount: 6800, get_amount: 680, created_at: 1780500000, invited_user: { email: 'd***@example.com', invite_code: 'DEMO2026', joined_at: 1780000000 } }] }
     await route.fulfill({ json: { status: 'success', data } })
@@ -52,6 +56,8 @@ test('renders traffic chart, node states, and invitee detail', async ({ page }) 
   await expect(page.locator('.chart-panel .traffic-axis span')).toHaveCount(7)
   expect(await page.locator('.usage-chart').evaluate((element) => { const box = element.getBoundingClientRect(); return box.width / box.height })).toBeCloseTo(680 / 150, 2)
   await expect.poll(() => page.locator('.chart-panel .traffic-point > circle:first-child').evaluateAll((circles) => circles.every((circle) => circle.getAttribute('r') === '4'))).toBe(true)
+  await expect(page.locator('.dashboard-node-table-panel tbody tr').nth(1).locator('td').last()).toContainText('2026')
+  await expect(page.locator('.dashboard-node-table-panel')).not.toContainText('1780500000')
   await navigate(page, '/traffic')
   await expect(page.locator('.traffic-chart')).toBeVisible()
   await expect(page.locator('.traffic-point')).toHaveCount(14)
@@ -59,6 +65,7 @@ test('renders traffic chart, node states, and invitee detail', async ({ page }) 
   await expect(page.locator('.traffic-panel .traffic-axis')).toContainText(/\d+\.\d+/)
   await navigate(page, '/servers')
   await expect(page.locator('.dashboard-node-item')).toHaveCount(2)
+  await expect(page.locator('.dashboard-node-code')).toHaveText(['🇭🇰', '🇯🇵'])
   await expect(page.locator('.dashboard-node-summary')).toContainText('1 / 2 在线')
   await navigate(page, '/invite')
   await page.getByRole('button', { name: /DEMO2026/ }).click()
@@ -86,12 +93,19 @@ test('renders backend plans, scrollable rich notices, status help, and real sess
   await expect(page.locator('.plan-card')).toContainText('1000 Mbps')
   await expect(page.locator('.plan-card')).toContainText('同时在线设备')
   await expect(page.locator('.plan-card')).toContainText('为什么推荐给你')
+  const planItemSpacing = await page.locator('.plan-card-content li').first().evaluate((element) => {
+    const style = getComputedStyle(element)
+    return { lineHeight: Number.parseFloat(style.lineHeight), marginTop: Number.parseFloat(style.marginTop), marginBottom: Number.parseFloat(style.marginBottom) }
+  })
+  expect(planItemSpacing.lineHeight).toBeLessThan(22)
+  expect(Math.max(planItemSpacing.marginTop, planItemSpacing.marginBottom)).toBeLessThanOrEqual(2)
 
   await navigate(page, '/gifts')
   await page.getByPlaceholder('输入管理员创建的优惠码').fill('SAVE20')
-  await page.getByRole('button', { name: '选择套餐并验证' }).click()
+  await page.getByRole('button', { name: '保存优惠券' }).click()
+  await expect(page.locator('.coupon-preview')).toContainText('夏日八折券')
+  await page.getByRole('button', { name: '购买套餐' }).click()
   await page.locator('.plan-card').click()
-  await page.getByRole('button', { name: '验证', exact: true }).click()
   await expect(page.locator('.coupon-preview')).toContainText('夏日八折券')
   await expect(page.locator('.coupon-preview')).toContainText('优惠后 ¥ 24.00')
   await page.locator('.plan-modal .icon-button').click()

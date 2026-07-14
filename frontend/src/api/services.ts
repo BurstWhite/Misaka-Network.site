@@ -36,6 +36,9 @@ export const commerceApi = {
   checkout: (payload: object) => postRawData<any>('/user/order/checkout', payload),
   checkPayment: (tradeNo: string) => getData<any>('/user/order/check', { trade_no: tradeNo }),
   coupon: (payload: object) => postData<any>('/user/coupon/check', payload),
+  savedCoupon: () => getData<any>('/user/coupon/saved'),
+  saveCoupon: (code: string) => postData<any>('/user/coupon/save', { code }),
+  removeSavedCoupon: () => postData<boolean>('/user/coupon/remove'),
 }
 
 export const serviceApi = {

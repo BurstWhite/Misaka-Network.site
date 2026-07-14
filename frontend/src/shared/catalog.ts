@@ -34,9 +34,25 @@ export function extractRows<T>(value: unknown): T[] {
   return []
 }
 
+function nodeLocationCode(name: PublicNode['name']): string | undefined {
+  return String(name || '').match(/\b(HKG|NRT|LAX|SIN|FRA|[A-Z]{2})\b/i)?.[1]?.toUpperCase()
+}
+
 export function displayNodeCode(node: Pick<PublicNode, 'name' | 'type'>): string {
-  const match = String(node?.name || '').match(/\b(HKG|NRT|LAX|SIN|FRA|[A-Z]{2})\b/i)
-  return match?.[1]?.toUpperCase() || String(node?.type || 'NODE').slice(0, 4).toUpperCase()
+  return nodeLocationCode(node?.name) || String(node?.type || 'NODE').slice(0, 4).toUpperCase()
+}
+
+const nodeFlags: Record<string, string> = {
+  HK: '🇭🇰', HKG: '🇭🇰',
+  JP: '🇯🇵', NRT: '🇯🇵',
+  US: '🇺🇸', LAX: '🇺🇸',
+  SG: '🇸🇬', SIN: '🇸🇬',
+  DE: '🇩🇪', FRA: '🇩🇪',
+}
+
+export function displayNodeFlag(node: Pick<PublicNode, 'name'>): string {
+  const code = nodeLocationCode(node?.name)
+  return code ? nodeFlags[code] || '🌐' : '🌐'
 }
 
 export function displayRate(rate: PublicNode['rate']): string {

@@ -6,6 +6,7 @@ import { commerceApi } from '@/api/services'
 import PageState from '@/shared/PageState.vue'
 import { date, money, periods } from '@/shared/format'
 import { parsePlanFeatures } from '@/shared/catalog'
+import { couponDiscountAmount } from '@/shared/coupon'
 import { renderRichText } from '@/shared/rich-text'
 
 const router = useRouter()
@@ -16,15 +17,37 @@ const plans = ref<any[]>([])
 const selected = ref<any>(null)
 const period = ref('month_price')
 const coupon = ref(String(route.query.coupon || ''))
+const savedCoupon = ref<any>(null)
 const checkedCoupon = ref<any>(null)
 const couponChecking = ref(false)
 const couponError = ref('')
+const couponUnavailable = ref(false)
+const savedCouponLoadError = ref('')
 const submitting = ref(false)
+let couponCheckVersion = 0
+
+type CouponCheckResult = 'valid' | 'invalid' | 'error'
 
 async function load() {
   loading.value = true
   error.value = ''
-  try { plans.value = await commerceApi.plans() || [] } catch (e: any) { error.value = e.message } finally { loading.value = false }
+  savedCouponLoadError.value = ''
+  try {
+    const [loadedPlans, accountCoupon] = await Promise.all([
+      commerceApi.plans(),
+      commerceApi.savedCoupon().catch((e: any) => {
+        savedCouponLoadError.value = `账号优惠券加载失败：${e.message}`
+        return null
+      }),
+    ])
+    plans.value = loadedPlans || []
+    savedCoupon.value = accountCoupon
+    if (!coupon.value.trim() && accountCoupon?.code) coupon.value = String(accountCoupon.code)
+  } catch (e: any) {
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(load)
@@ -36,18 +59,24 @@ const prices = computed(() => selected.value
 watch(selected, (plan) => {
   if (plan && !prices.value.some(([key]) => key === period.value)) period.value = String(prices.value[0]?.[0] || '')
 })
-watch([selected, period, coupon], () => {
+
+function resetCouponValidation() {
+  couponCheckVersion += 1
   checkedCoupon.value = null
   couponError.value = ''
+  couponUnavailable.value = false
+  couponChecking.value = false
+}
+
+watch(coupon, resetCouponValidation)
+watch([() => selected.value?.id, period], () => {
+  resetCouponValidation()
+  if (selected.value && period.value && coupon.value.trim()) void checkCoupon()
 })
 
 const selectedPrice = computed(() => Number(selected.value?.[period.value] || 0))
-const couponDiscount = computed(() => {
-  if (!checkedCoupon.value) return 0
-  const value = Number(checkedCoupon.value.value || 0)
-  const discount = Number(checkedCoupon.value.type) === 2 ? Math.floor(selectedPrice.value * value / 100) : value
-  return Math.min(selectedPrice.value, Math.max(0, discount))
-})
+const couponDiscount = computed(() => couponDiscountAmount(checkedCoupon.value, selectedPrice.value))
+const isUsingSavedCoupon = computed(() => Boolean(savedCoupon.value?.code) && coupon.value.trim() === String(savedCoupon.value.code))
 
 function planTraffic(plan: any): string {
   const value = Number(plan?.transfer_enable || 0)
@@ -64,31 +93,45 @@ function planFeatures(plan: any): string[] {
   ]
 }
 
-async function checkCoupon(): Promise<boolean> {
+async function checkCoupon(): Promise<CouponCheckResult> {
   const code = coupon.value.trim()
-  if (!selected.value || !period.value || !code) return false
+  if (!selected.value || !period.value || !code) return 'error'
+  const requestVersion = ++couponCheckVersion
   couponChecking.value = true
   couponError.value = ''
+  couponUnavailable.value = false
+  checkedCoupon.value = null
   try {
-    checkedCoupon.value = await commerceApi.coupon({ code, plan_id: selected.value.id, period: period.value })
-    return true
+    const result = await commerceApi.coupon({ code, plan_id: selected.value.id, period: period.value })
+    if (requestVersion !== couponCheckVersion) return 'error'
+    checkedCoupon.value = result
+    return 'valid'
   } catch (e: any) {
+    if (requestVersion !== couponCheckVersion) return 'error'
     checkedCoupon.value = null
-    couponError.value = e.message
-    return false
+    couponUnavailable.value = isUsingSavedCoupon.value && Number(e.status) === 400
+    couponError.value = couponUnavailable.value
+      ? `已保存的优惠券当前不可用，本次下单不会使用：${e.message}`
+      : e.message
+    return couponUnavailable.value ? 'invalid' : 'error'
   } finally {
-    couponChecking.value = false
+    if (requestVersion === couponCheckVersion) couponChecking.value = false
   }
 }
 
 async function create(manual = false) {
   if (!selected.value || !period.value) return
   const code = coupon.value.trim()
-  if (code && checkedCoupon.value?.code !== code && !(await checkCoupon())) return
+  let couponCode = checkedCoupon.value?.code === code ? checkedCoupon.value.code : undefined
+  if (code && !couponCode && !(isUsingSavedCoupon.value && couponUnavailable.value)) {
+    const checkResult = await checkCoupon()
+    if (checkResult === 'valid') couponCode = checkedCoupon.value?.code
+    else if (checkResult !== 'invalid') return
+  }
   submitting.value = true
   error.value = ''
   try {
-    const tradeNo = await commerceApi.createOrder({ plan_id: selected.value.id, period: period.value, coupon_code: checkedCoupon.value?.code || undefined })
+    const tradeNo = await commerceApi.createOrder({ plan_id: selected.value.id, period: period.value, coupon_code: couponCode })
     const id = typeof tradeNo === 'string' ? tradeNo : tradeNo?.trade_no
     if (!id) throw new Error('订单号缺失')
     if (manual) await commerceApi.manualSubmit(id)
@@ -122,11 +165,12 @@ async function create(manual = false) {
         <ul v-if="parsePlanFeatures(selected.content).length" class="plan-content plan-content-features"><li v-for="feature in parsePlanFeatures(selected.content)" :key="feature.feature" :class="{ unsupported: !feature.support }">{{ feature.support ? '✓' : '×' }} {{ feature.feature }}</li></ul>
         <div v-else-if="selected.content" class="plan-content knowledge-body" v-html="renderRichText(selected.content, selected.name)"/>
         <label>付款周期<select v-model="period"><option v-for="([key, label]) in prices" :key="key" :value="key">{{ label }} · {{ money(selected[key]) }}</option></select></label>
-        <label>优惠券（选填）<span class="copy-row"><input v-model.trim="coupon" placeholder="输入优惠码" /><button class="button secondary" type="button" :disabled="couponChecking || !coupon" @click="checkCoupon">{{ couponChecking ? '验证中' : '验证' }}</button></span></label>
+        <label>优惠券（选填）<small v-if="isUsingSavedCoupon" class="muted">已自动加载当前账号保存的优惠券</small><span class="copy-row"><input v-model.trim="coupon" placeholder="输入优惠码" /><button class="button secondary" type="button" :disabled="couponChecking || !coupon" @click="checkCoupon">{{ couponChecking ? '验证中' : '验证' }}</button></span></label>
         <div v-if="checkedCoupon" class="coupon-preview"><div><strong>{{ checkedCoupon.name || '优惠券有效' }}</strong><p>减免 {{ money(couponDiscount) }}，优惠后 {{ money(selectedPrice - couponDiscount) }} · 有效期至 {{ date(checkedCoupon.ended_at) }}</p></div></div>
+        <p v-if="savedCouponLoadError" class="form-message error">{{ savedCouponLoadError }}</p>
         <p v-if="couponError" class="form-message error">{{ couponError }}</p>
         <p v-if="error" class="form-message error">{{ error }}</p>
-        <footer><button class="button secondary" :disabled="submitting" @click="create(true)">人工提交订单</button><button class="button primary" :disabled="submitting" @click="create(false)">{{ submitting ? '正在提交' : '下单' }}</button></footer>
+        <footer><button class="button secondary" :disabled="submitting || couponChecking" @click="create(true)">人工提交订单</button><button class="button primary" :disabled="submitting || couponChecking" @click="create(false)">{{ submitting ? '正在提交' : '下单' }}</button></footer>
       </section>
     </div>
   </PageState>

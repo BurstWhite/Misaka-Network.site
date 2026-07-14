@@ -14,7 +14,7 @@ class SubscribeTemplate extends Model
         'content' => 'string',
     ];
 
-    private static string $cachePrefix = 'subscribe_template:';
+    private static string $cachePrefix = 'subscribe_template:v2:';
 
     public static function getContent(string $name): ?string
     {

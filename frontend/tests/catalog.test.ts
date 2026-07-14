@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { displayNodeCode, displayRate, extractRows, parsePlanFeatures, stripMarkup } from '@/shared/catalog'
+import { displayNodeCode, displayNodeFlag, displayRate, extractRows, parsePlanFeatures, stripMarkup } from '@/shared/catalog'
 
 describe('public catalog helpers', () => {
   it('normalizes array and envelope responses without inventing rows', () => {
@@ -13,6 +13,14 @@ describe('public catalog helpers', () => {
     expect(displayNodeCode({ name: 'edge', type: 'hysteria' })).toBe('HYST')
     expect(displayRate('1.25')).toBe('1.3×')
     expect(displayRate(null)).toBe('—')
+  })
+
+  it.each([
+    ['Singapore SG', '🇸🇬'], ['US Edge', '🇺🇸'], ['Hong Kong HK', '🇭🇰'],
+    ['Hong Kong HKG', '🇭🇰'], ['Tokyo NRT', '🇯🇵'], ['Los Angeles LAX', '🇺🇸'],
+    ['Singapore SIN', '🇸🇬'], ['Frankfurt FRA', '🇩🇪'], ['Unknown ZZ', '🌐'], ['No code', '🌐'],
+  ])('maps node location %s to its flag', (name, flag) => {
+    expect(displayNodeFlag({ name })).toBe(flag)
   })
 
   it('removes markup before using plan content as plain text', () => {

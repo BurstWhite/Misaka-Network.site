@@ -7,6 +7,7 @@ import Icon from '@/shared/Icon.vue'
 import { bytes, date } from '@/shared/format'
 import { clientImportUrl, type SupportedClient } from '@/shared/client-import'
 import { renderRichText } from '@/shared/rich-text'
+import { runtimeConfig } from '@/app/config'
 
 const loading = ref(true)
 const error = ref('')
@@ -42,7 +43,7 @@ async function copy() {
 function openClient(client: SupportedClient) {
   const url = subscribeUrl()
   if (!url) { message.value = '当前没有可用订阅地址'; return }
-  window.location.assign(clientImportUrl(client, url))
+  window.location.assign(clientImportUrl(client, url, runtimeConfig.appName))
 }
 
 async function reset() {

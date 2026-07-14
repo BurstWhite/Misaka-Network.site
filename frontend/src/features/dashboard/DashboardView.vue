@@ -159,7 +159,7 @@ const onlineServerCount = computed(() => servers.value.filter((server) => server
         <header><div><h2>节点状态</h2><p>实时查看可用节点与最近心跳</p></div><div class="dashboard-node-summary"><NodeStatusLegend/>{{ onlineServerCount }} / {{ servers.length }} 在线<RouterLink to="/servers">查看全部</RouterLink></div></header>
         <div class="table-wrap">
           <table class="server-table">
-            <thead><tr><th>节点</th><th>协议</th><th>倍率</th><th>状态</th><th>最后检查</th></tr></thead>
+            <thead><tr><th>节点</th><th>协议</th><th>倍率</th><th>状态</th><th>在线状态检查时间</th></tr></thead>
             <tbody>
               <tr v-for="server in servers.slice(0, 6)" :key="server.id"><td><strong>{{ server.name }}</strong></td><td>{{ server.type || '-' }}</td><td>{{ server.rate || 1 }}×</td><td><span :class="['node-status', serverStatus(server).key]"><i/>{{ serverStatus(server).label }}</span></td><td>{{ date(server.last_check_at, true) }}</td></tr>
               <tr v-if="!servers.length"><td colspan="5" class="empty-cell">暂无节点</td></tr>

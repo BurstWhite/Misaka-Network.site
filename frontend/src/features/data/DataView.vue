@@ -2,12 +2,14 @@
 /* eslint-disable vue/no-v-html -- renderRichText applies a strict DOM allowlist before rendering. */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { serviceApi } from '@/api/services'
+import { commerceApi, serviceApi } from '@/api/services'
 import PageState from '@/shared/PageState.vue'
 import Icon from '@/shared/Icon.vue'
 import NodeStatusLegend from '@/shared/NodeStatusLegend.vue'
+import { displayNodeFlag } from '@/shared/catalog'
 import { bytes, date, money } from '@/shared/format'
 import { aggregateTrafficByDay } from '@/shared/traffic'
+import { renderRichText } from '@/shared/rich-text'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,6 +22,9 @@ const expandedInviteCode = ref<string | null>(null)
 const inviteDetailsLoaded = ref(false)
 const inviteSaving = ref(false)
 const couponCode = ref('')
+const couponSaving = ref(false)
+const couponRemoving = ref(false)
+const couponError = ref('')
 const message = ref('')
 const knowledgeKeyword = ref('')
 const chartFocus = ref(0)
@@ -36,7 +41,7 @@ const meta: Record<string, [string, string]> = {
   traffic: ['流量明细', '按日期查看近 14 天的上传、下载与总用量。'],
   servers: ['节点状态', '实时查看可用节点、倍率与最近心跳。'],
   knowledge: ['使用文档', '客户端配置、订阅导入与常见问题。'],
-  gifts: ['优惠券', '验证管理员创建的优惠券，并在购买订阅时使用。'],
+  gifts: ['优惠券', '保存账号优惠券，购买订阅时将自动验证并使用。'],
 }
 
 const loaders: Record<string, () => Promise<any>> = {
@@ -44,12 +49,13 @@ const loaders: Record<string, () => Promise<any>> = {
   traffic: () => serviceApi.traffic({ days: 14 }),
   servers: serviceApi.servers,
   knowledge: () => serviceApi.knowledge({ keyword: knowledgeKeyword.value.trim() || undefined }),
-  gifts: async () => [],
+  gifts: commerceApi.savedCoupon,
 }
 
 async function load() {
   loading.value = true
   error.value = ''
+  couponError.value = ''
   message.value = ''
   chartFocus.value = 0
   chartHover.value = false
@@ -104,9 +110,45 @@ async function toggleInviteDetails(code: string) {
   }
 }
 
-function useCoupon() {
-  if (!couponCode.value.trim()) return
-  void router.push({ path: '/plans', query: { coupon: couponCode.value.trim() } })
+async function saveCoupon() {
+  const code = couponCode.value.trim()
+  if (!code || couponSaving.value || couponRemoving.value) return
+  couponSaving.value = true
+  couponError.value = ''
+  message.value = ''
+  try {
+    data.value = await commerceApi.saveCoupon(code)
+    couponCode.value = ''
+    message.value = '优惠券已保存到当前账号'
+  } catch (e: any) {
+    couponError.value = e.message
+  } finally {
+    couponSaving.value = false
+  }
+}
+
+async function removeCoupon() {
+  if (couponSaving.value || couponRemoving.value) return
+  couponRemoving.value = true
+  couponError.value = ''
+  message.value = ''
+  try {
+    await commerceApi.removeSavedCoupon()
+    data.value = null
+    message.value = '已删除账号保存的优惠券'
+  } catch (e: any) {
+    couponError.value = e.message
+  } finally {
+    couponRemoving.value = false
+  }
+}
+
+function couponValue(coupon: any): string {
+  return Number(coupon?.type) === 2 ? `减免 ${Number(coupon.value || 0)}%` : `减免 ${money(coupon?.value || 0)}`
+}
+
+function buyWithSavedCoupon() {
+  void router.push('/plans')
 }
 
 onMounted(load)
@@ -180,72 +222,11 @@ function serverStatus(server: any) {
   if (server.last_check_at && Date.now() / 1000 - Number(server.last_check_at) > 180) return { key: 'warming', label: '待确认' }
   return { key: 'online', label: '在线' }
 }
-function serverCode(server: any) {
-  const match = String(server?.name || '').match(/\b(HKG|NRT|LAX|SIN|FRA|[A-Z]{2})\b/i)
-  return match?.[1]?.toUpperCase() || String(server?.type || 'NODE').slice(0, 4).toUpperCase()
-}
-
 function openKnowledge(item: any, event: MouseEvent) {
   knowledgeOpener = event.currentTarget as HTMLElement
   selectedKnowledge.value = item
 }
 function closeKnowledge() { selectedKnowledge.value = null }
-function sanitizeHtml(value: string): string {
-  const allowedTags = new Set(['A', 'BR', 'CODE', 'H2', 'H3', 'H4', 'HR', 'IMG', 'LI', 'P', 'PRE', 'STRONG', 'TABLE', 'TBODY', 'TD', 'TH', 'THEAD', 'TR', 'UL'])
-  const blockedTags = new Set(['EMBED', 'FORM', 'IFRAME', 'MATH', 'OBJECT', 'SCRIPT', 'STYLE', 'SVG'])
-  const template = document.createElement('template')
-  template.innerHTML = value
-
-  for (const element of Array.from(template.content.querySelectorAll('*'))) {
-    if (blockedTags.has(element.tagName)) {
-      element.remove()
-      continue
-    }
-    if (!allowedTags.has(element.tagName)) {
-      element.replaceWith(...Array.from(element.childNodes))
-      continue
-    }
-
-    for (const attribute of Array.from(element.attributes)) {
-      const allowed = (element.tagName === 'A' && ['href', 'title'].includes(attribute.name))
-        || (element.tagName === 'IMG' && ['alt', 'src', 'title'].includes(attribute.name))
-      if (!allowed) element.removeAttribute(attribute.name)
-    }
-
-    if (element instanceof HTMLAnchorElement) {
-      if (!isSafeUrl(element.getAttribute('href'), ['http:', 'https:', 'mailto:'])) element.removeAttribute('href')
-      element.target = '_blank'
-      element.rel = 'noopener noreferrer'
-    }
-    if (element instanceof HTMLImageElement && !isSafeUrl(element.getAttribute('src'), ['http:', 'https:'])) {
-      element.removeAttribute('src')
-    }
-  }
-
-  return template.innerHTML
-}
-function isSafeUrl(value: string | null, protocols: string[]): boolean {
-  if (!value) return false
-  try { return protocols.includes(new URL(value, window.location.origin).protocol) } catch { return false }
-}
-function renderRichText(value: unknown, title = ''): string {
-  let html = String(value || '').replace(/\r\n?/g, '\n').trim()
-  if (title) html = html.replace(new RegExp(`^#\\s+${title.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\s*\\n?`, 'i'), '')
-  html = html.replace(/^###\s+(.+)$/gm, '<h4>$1</h4>').replace(/^##\s+(.+)$/gm, '<h3>$1</h3>').replace(/^#\s+(.+)$/gm, '<h2>$1</h2>')
-  html = html.replace(/^```(?:\w+)?\n([\s\S]*?)\n```$/gm, '<pre><code>$1</code></pre>').replace(/^---$/gm, '<hr>')
-  html = html.replace(/((?:^\|.*\|(?:\n|$)){2,})/gm, (table) => {
-    const rows = table.trim().split('\n').map((row) => row.replace(/^\||\|$/g, '').split('|').map((cell) => cell.trim()))
-    if (rows.length < 2 || !rows[1].every((cell) => /^:?-{3,}:?$/.test(cell))) return table
-    const head = `<thead><tr>${rows[0].map((cell) => `<th>${cell}</th>`).join('')}</tr></thead>`
-    const body = rows.slice(2).map((row) => `<tr>${rows[0].map((_, index) => `<td>${row[index] || ''}</td>`).join('')}</tr>`).join('')
-    return `<table>${head}<tbody>${body}</tbody></table>`
-  })
-  html = html.replace(/^\s*[-*]\s+(.+)$/gm, '<li>$1</li>').replace(/(?:<li>[\s\S]*?<\/li>\s*)+/g, (list) => `<ul>${list}</ul>`)
-  html = html.replace(/!\[([^\]]*)\]\(([^\s)]+)(?:\s+"[^"]*")?\)/g, '<img alt="$1" src="$2">').replace(/\[([^\]]+)\]\(([^\s)]+)(?:\s+"[^"]*")?\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>')
-  html = html.split(/\n{2,}/).map((block) => /^<(h[234]|ul|pre|hr|img)/i.test(block.trim()) ? block : `<p>${block.replace(/\n/g, '<br>')}</p>`).join('')
-  return sanitizeHtml(html)
-}
 </script>
 
 <template>
@@ -290,7 +271,7 @@ function renderRichText(value: unknown, title = ''): string {
       <div v-if="selectedServer" class="dashboard-node-body">
         <div class="dashboard-node-list">
           <button v-for="server in rows" :key="server.id" type="button" :class="['dashboard-node-item', { active: String(server.id) === String(selectedServer.id) }]" @click="selectedServerId = server.id">
-            <span class="dashboard-node-code">{{ serverCode(server) }}</span><span><strong>{{ server.name }}</strong><small>{{ server.type || '-' }} · {{ serverStatus(server).label }}</small></span><em :class="serverStatus(server).key">{{ Number(server.rate || 1).toFixed(1) }}×</em>
+            <span class="dashboard-node-code" aria-hidden="true">{{ displayNodeFlag(server) }}</span><span><strong>{{ server.name }}</strong><small>{{ server.type || '-' }} · {{ serverStatus(server).label }}</small></span><em :class="serverStatus(server).key">{{ Number(server.rate || 1).toFixed(1) }}×</em>
           </button>
         </div>
         <div class="dashboard-node-detail">
@@ -318,7 +299,10 @@ function renderRichText(value: unknown, title = ''): string {
     <template v-else>
       <section v-if="kind === 'invite'" class="stats-strip"><div><small>已注册用户</small><strong>{{ inviteStats[0] || 0 }}</strong></div><div><small>有效佣金</small><strong>{{ money(inviteStats[1] || 0) }}</strong></div><div><small>佣金比例</small><strong>{{ inviteStats[3] || 0 }}%</strong></div></section>
       <section v-if="kind === 'gifts'" class="panel gift-redeem">
-        <form class="copy-row" @submit.prevent="useCoupon"><input v-model.trim="couponCode" placeholder="输入管理员创建的优惠码" autocomplete="off"/><button class="button primary">选择套餐并验证</button></form>
+        <form class="copy-row" @submit.prevent="saveCoupon"><input v-model.trim="couponCode" placeholder="输入管理员创建的优惠码" autocomplete="off"/><button class="button primary" :disabled="couponSaving || couponRemoving || !couponCode">{{ couponSaving ? '保存中' : data ? '更换优惠券' : '保存优惠券' }}</button></form>
+        <div v-if="data" class="coupon-preview"><div><strong>{{ data.name || '已保存优惠券' }}</strong><p>{{ couponValue(data) }} · 优惠码 {{ data.code }} · 有效期至 {{ date(data.ended_at) }}</p></div><div class="coupon-preview-actions"><button class="button secondary" type="button" :disabled="couponSaving || couponRemoving" @click="removeCoupon">{{ couponRemoving ? '删除中' : '删除' }}</button><button class="button primary" type="button" :disabled="couponSaving || couponRemoving" @click="buyWithSavedCoupon">购买套餐</button></div></div>
+        <p v-else class="muted">当前账号尚未保存优惠券。</p>
+        <p v-if="couponError" class="form-message error">{{ couponError }}</p>
       </section>
       <section v-if="kind !== 'gifts'" class="panel data-list">
         <template v-for="(item, index) in rows" :key="item.id || item.code || index">

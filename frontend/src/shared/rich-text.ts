@@ -30,6 +30,10 @@ export function sanitizeHtml(value: string): string {
     }
   }
 
+  for (const paragraph of Array.from(template.content.querySelectorAll('p'))) {
+    if (!paragraph.textContent?.replace(/\u00a0/g, ' ').trim() && !paragraph.querySelector('img, code')) paragraph.remove()
+  }
+
   return template.innerHTML
 }
 
@@ -39,7 +43,12 @@ function isSafeUrl(value: string | null, protocols: string[]): boolean {
 }
 
 export function renderRichText(value: unknown, title = ''): string {
-  let html = String(value || '').replace(/\r\n?/g, '\n').trim()
+  let html = String(value || '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/<p\b[^>]*>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>/gi, '')
+    .replace(/(?:<br\s*\/?>\s*){2,}/gi, '<br>')
+    .replace(/<\/ul>\s*<ul>/gi, '')
+    .trim()
   if (title) html = html.replace(new RegExp(`^#\\s+${title.replace(/[.*+?^${}()|[\]\\\\]/g, '\\\\$&')}\\s*\\n?`, 'i'), '')
   html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>').replace(/^###\s+(.+)$/gm, '<h4>$1</h4>').replace(/^##\s+(.+)$/gm, '<h3>$1</h3>').replace(/^#\s+(.+)$/gm, '<h2>$1</h2>')
   html = html.replace(/^```(?:\w+)?\n([\s\S]*?)\n```$/gm, '<pre><code>$1</code></pre>').replace(/^---$/gm, '<hr>')
@@ -50,7 +59,7 @@ export function renderRichText(value: unknown, title = ''): string {
     const body = rows.slice(2).map((row) => `<tr>${rows[0].map((_, index) => `<td>${row[index] || ''}</td>`).join('')}</tr>`).join('')
     return `<table>${head}<tbody>${body}</tbody></table>`
   })
-  html = html.replace(/^\s*[-*]\s+(.+)$/gm, '<li>$1</li>').replace(/(?:<li>[\s\S]*?<\/li>\s*)+/g, (list) => `<ul>${list}</ul>`)
+  html = html.replace(/^\s*[-*]\s+(.+)$/gm, '<md-li>$1</md-li>').replace(/(?:<md-li>[\s\S]*?<\/md-li>\s*)+/g, (list) => `<ul>${list.replace(/<md-li>/g, '<li>').replace(/<\/md-li>/g, '</li>')}</ul>`)
   html = html.replace(/!\[([^\]]*)\]\(([^\s)]+)(?:\s+"[^"]*")?\)/g, '<img alt="$1" src="$2">').replace(/\[([^\]]+)\]\(([^\s)]+)(?:\s+"[^"]*")?\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>')
   html = html.split(/\n{2,}/).map((block) => /^<(h[234]|ul|pre|hr|img)/i.test(block.trim()) ? block : `<p>${block.replace(/\n/g, '<br>')}</p>`).join('')

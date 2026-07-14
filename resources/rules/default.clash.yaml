@@ -86,201 +86,92 @@ proxy-groups:
   - { name: "自动选择", type: url-test, proxies: [], url: "http://www.gstatic.com/generate_204", interval: 300, tolerance: 50 }
   - { name: "故障转移", type: fallback, proxies: [], url: "http://www.gstatic.com/generate_204", interval: 300 }
 
+rule-providers:
+  applications:
+    type: http
+    behavior: classical
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/applications.txt"
+    path: ./ruleset/applications.yaml
+    interval: 86400
+  private:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt"
+    path: ./ruleset/private.yaml
+    interval: 86400
+  reject:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
+    path: ./ruleset/reject.yaml
+    interval: 86400
+  icloud:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt"
+    path: ./ruleset/icloud.yaml
+    interval: 86400
+  apple:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt"
+    path: ./ruleset/apple.yaml
+    interval: 86400
+  google:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/google.txt"
+    path: ./ruleset/google.yaml
+    interval: 86400
+  proxy:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt"
+    path: ./ruleset/proxy.yaml
+    interval: 86400
+  direct:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt"
+    path: ./ruleset/direct.yaml
+    interval: 86400
+  lancidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt"
+    path: ./ruleset/lancidr.yaml
+    interval: 86400
+  cncidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt"
+    path: ./ruleset/cncidr.yaml
+    interval: 86400
+  telegramcidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt"
+    path: ./ruleset/telegramcidr.yaml
+    interval: 86400
+
 rules:
-  # Custom
-  # Ad blocking
-  - DOMAIN-KEYWORD,admarvel,REJECT
-  - DOMAIN-KEYWORD,admaster,REJECT
-  - DOMAIN-KEYWORD,adsage,REJECT
-  - DOMAIN-KEYWORD,adsmogo,REJECT
-  - DOMAIN-KEYWORD,adsrvmedia,REJECT
-  - DOMAIN-KEYWORD,adwords,REJECT
-  - DOMAIN-KEYWORD,adservice,REJECT
-  - DOMAIN-KEYWORD,domob,REJECT
-  - DOMAIN-KEYWORD,duomeng,REJECT
-  - DOMAIN-KEYWORD,dwtrack,REJECT
-  - DOMAIN-KEYWORD,guanggao,REJECT
-  - DOMAIN-KEYWORD,lianmeng,REJECT
-  - DOMAIN-KEYWORD,omgmta,REJECT
-  - DOMAIN-KEYWORD,openx,REJECT
-  - DOMAIN-KEYWORD,partnerad,REJECT
-  - DOMAIN-KEYWORD,supersonicads,REJECT
-  - DOMAIN-KEYWORD,umeng,REJECT
-  - DOMAIN-KEYWORD,zjtoolbar,REJECT
-  - DOMAIN-SUFFIX,appsflyer.com,REJECT
-  - DOMAIN-SUFFIX,doubleclick.net,REJECT
-  - DOMAIN-SUFFIX,mmstat.com,REJECT
-  # LAN
-  - DOMAIN-SUFFIX,local,DIRECT
-  - DOMAIN-SUFFIX,localhost,DIRECT
-  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
-  - IP-CIDR,17.0.0.0/8,DIRECT,no-resolve
-  - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
-  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
-  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
-  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
-  - IP-CIDR,198.18.0.0/16,DIRECT,no-resolve
-  - IP-CIDR,224.0.0.0/4,DIRECT,no-resolve
-  - IP-CIDR6,::1/128,DIRECT,no-resolve
-  - IP-CIDR6,fc00::/7,DIRECT,no-resolve
-  - IP-CIDR6,fe80::/10,DIRECT,no-resolve
-  # Apple (App Store via proxy for foreign regions)
+  # Loyalsoldier rule providers are rebuilt daily. Keep specific overrides
+  # before the broad provider rules because Clash uses first-match routing.
+  - RULE-SET,applications,DIRECT
+  - RULE-SET,private,DIRECT
+  - RULE-SET,reject,REJECT
+  # App Store downloads may need the subscription proxy for foreign regions.
   - DOMAIN-SUFFIX,apps.apple.com,$app_name
   - DOMAIN-SUFFIX,itunes.apple.com,$app_name
   - DOMAIN-SUFFIX,blobstore.apple.com,$app_name
-  - DOMAIN,safebrowsing.urlsec.qq.com,DIRECT
-  - DOMAIN-SUFFIX,apple.com,DIRECT
-  - DOMAIN-SUFFIX,apple-cloudkit.com,DIRECT
-  - DOMAIN-SUFFIX,icloud.com,DIRECT
-  - DOMAIN-SUFFIX,icloud-content.com,DIRECT
-  - DOMAIN-SUFFIX,mzstatic.com,DIRECT
-  - DOMAIN-SUFFIX,aaplimg.com,DIRECT
-  - DOMAIN-SUFFIX,cdn-apple.com,DIRECT
-  - DOMAIN-SUFFIX,akadns.net,DIRECT
-  # China direct (KEYWORD)
-  - DOMAIN-KEYWORD,baidu,DIRECT
-  - DOMAIN-KEYWORD,alibaba,DIRECT
-  - DOMAIN-KEYWORD,alicdn,DIRECT
-  - DOMAIN-KEYWORD,alipay,DIRECT
-  - DOMAIN-KEYWORD,taobao,DIRECT
-  - DOMAIN-KEYWORD,tencent,DIRECT
-  - DOMAIN-KEYWORD,bilibili,DIRECT
-  - DOMAIN-KEYWORD,weibo,DIRECT
-  - DOMAIN-KEYWORD,douyin,DIRECT
-  - DOMAIN-KEYWORD,bytedance,DIRECT
-  - DOMAIN-KEYWORD,xiaomi,DIRECT
-  - DOMAIN-KEYWORD,huawei,DIRECT
-  - DOMAIN-KEYWORD,netease,DIRECT
-  - DOMAIN-KEYWORD,meituan,DIRECT
-  - DOMAIN-KEYWORD,pinduoduo,DIRECT
-  - DOMAIN-KEYWORD,kuaishou,DIRECT
-  - DOMAIN-KEYWORD,jingdong,DIRECT
-  - DOMAIN-KEYWORD,officecdn,DIRECT
-  # China direct (SUFFIX)
-  - DOMAIN-SUFFIX,qq.com,DIRECT
-  - DOMAIN-SUFFIX,weixin.com,DIRECT
-  - DOMAIN-SUFFIX,wechat.com,DIRECT
-  - DOMAIN-SUFFIX,gtimg.com,DIRECT
-  - DOMAIN-SUFFIX,qcloud.com,DIRECT
-  - DOMAIN-SUFFIX,myqcloud.com,DIRECT
-  - DOMAIN-SUFFIX,qpic.cn,DIRECT
-  - DOMAIN-SUFFIX,tenpay.com,DIRECT
-  - DOMAIN-SUFFIX,tmall.com,DIRECT
-  - DOMAIN-SUFFIX,jd.com,DIRECT
-  - DOMAIN-SUFFIX,360buyimg.com,DIRECT
-  - DOMAIN-SUFFIX,iqiyi.com,DIRECT
-  - DOMAIN-SUFFIX,youku.com,DIRECT
-  - DOMAIN-SUFFIX,ykimg.com,DIRECT
-  - DOMAIN-SUFFIX,tudou.com,DIRECT
-  - DOMAIN-SUFFIX,acfun.tv,DIRECT
-  - DOMAIN-SUFFIX,hdslb.com,DIRECT
-  - DOMAIN-SUFFIX,sohu.com,DIRECT
-  - DOMAIN-SUFFIX,sogou.com,DIRECT
-  - DOMAIN-SUFFIX,zhihu.com,DIRECT
-  - DOMAIN-SUFFIX,zhimg.com,DIRECT
-  - DOMAIN-SUFFIX,douban.com,DIRECT
-  - DOMAIN-SUFFIX,doubanio.com,DIRECT
-  - DOMAIN-SUFFIX,163.com,DIRECT
-  - DOMAIN-SUFFIX,126.com,DIRECT
-  - DOMAIN-SUFFIX,126.net,DIRECT
-  - DOMAIN-SUFFIX,127.net,DIRECT
-  - DOMAIN-SUFFIX,yeah.net,DIRECT
-  - DOMAIN-SUFFIX,sina.com,DIRECT
-  - DOMAIN-SUFFIX,sinaimg.cn,DIRECT
-  - DOMAIN-SUFFIX,ximalaya.com,DIRECT
-  - DOMAIN-SUFFIX,xmcdn.com,DIRECT
-  - DOMAIN-SUFFIX,csdn.net,DIRECT
-  - DOMAIN-SUFFIX,gitee.com,DIRECT
-  - DOMAIN-SUFFIX,jianshu.com,DIRECT
-  - DOMAIN-SUFFIX,cnblogs.com,DIRECT
-  - DOMAIN-SUFFIX,oschina.net,DIRECT
-  - DOMAIN-SUFFIX,ele.me,DIRECT
-  - DOMAIN-SUFFIX,ctrip.com,DIRECT
-  - DOMAIN-SUFFIX,suning.com,DIRECT
-  - DOMAIN-SUFFIX,dianping.com,DIRECT
-  - DOMAIN-SUFFIX,amap.com,DIRECT
-  - DOMAIN-SUFFIX,autonavi.com,DIRECT
-  - DOMAIN-SUFFIX,mi.com,DIRECT
-  - DOMAIN-SUFFIX,miui.com,DIRECT
-  - DOMAIN-SUFFIX,ifeng.com,DIRECT
-  - DOMAIN-SUFFIX,youdao.com,DIRECT
-  - DOMAIN-SUFFIX,iciba.com,DIRECT
-  - DOMAIN-SUFFIX,xunlei.com,DIRECT
-  - DOMAIN-SUFFIX,smzdm.com,DIRECT
-  - DOMAIN-SUFFIX,sspai.com,DIRECT
-  - DOMAIN-SUFFIX,36kr.com,DIRECT
-  - DOMAIN-SUFFIX,speedtest.net,DIRECT
-  - DOMAIN-SUFFIX,microsoft.com,DIRECT
-  - DOMAIN-SUFFIX,microsoftonline.com,DIRECT
-  - DOMAIN-SUFFIX,office.com,DIRECT
-  - DOMAIN-SUFFIX,office365.com,DIRECT
-  - DOMAIN-SUFFIX,windows.com,DIRECT
-  - DOMAIN-SUFFIX,windowsupdate.com,DIRECT
-  - DOMAIN-SUFFIX,live.com,DIRECT
-  - DOMAIN-SUFFIX,msn.com,DIRECT
-  - DOMAIN-SUFFIX,cn,DIRECT
-  - DOMAIN-KEYWORD,-cn,DIRECT
-  # Blocked services (KEYWORD)
-  - DOMAIN-KEYWORD,google,$app_name
-  - DOMAIN-KEYWORD,gmail,$app_name
-  - DOMAIN-KEYWORD,youtube,$app_name
-  - DOMAIN-KEYWORD,facebook,$app_name
-  - DOMAIN-KEYWORD,twitter,$app_name
-  - DOMAIN-KEYWORD,instagram,$app_name
-  - DOMAIN-KEYWORD,whatsapp,$app_name
-  - DOMAIN-KEYWORD,telegram,$app_name
-  - DOMAIN-KEYWORD,github,$app_name
-  - DOMAIN-KEYWORD,blogspot,$app_name
-  - DOMAIN-KEYWORD,dropbox,$app_name
-  - DOMAIN-KEYWORD,wikipedia,$app_name
-  - DOMAIN-KEYWORD,pinterest,$app_name
-  - DOMAIN-KEYWORD,discord,$app_name
-  - DOMAIN-KEYWORD,openai,$app_name
-  - DOMAIN-KEYWORD,anthropic,$app_name
-  - DOMAIN-KEYWORD,netflix,$app_name
-  - DOMAIN-KEYWORD,spotify,$app_name
-  - DOMAIN-KEYWORD,amazon,$app_name
-  # Blocked services (SUFFIX)
-  - DOMAIN-SUFFIX,t.co,$app_name
-  - DOMAIN-SUFFIX,x.com,$app_name
-  - DOMAIN-SUFFIX,twimg.com,$app_name
-  - DOMAIN-SUFFIX,fb.me,$app_name
-  - DOMAIN-SUFFIX,fbcdn.net,$app_name
-  - DOMAIN-SUFFIX,youtu.be,$app_name
-  - DOMAIN-SUFFIX,ytimg.com,$app_name
-  - DOMAIN-SUFFIX,gstatic.com,$app_name
-  - DOMAIN-SUFFIX,ggpht.com,$app_name
-  - DOMAIN-SUFFIX,googlevideo.com,$app_name
-  - DOMAIN-SUFFIX,v2ex.com,$app_name
-  - DOMAIN-SUFFIX,medium.com,$app_name
-  - DOMAIN-SUFFIX,reddit.com,$app_name
-  - DOMAIN-SUFFIX,redd.it,$app_name
-  - DOMAIN-SUFFIX,imgur.com,$app_name
-  - DOMAIN-SUFFIX,pixiv.net,$app_name
-  - DOMAIN-SUFFIX,nytimes.com,$app_name
-  - DOMAIN-SUFFIX,nyt.com,$app_name
-  - DOMAIN-SUFFIX,bbc.com,$app_name
-  - DOMAIN-SUFFIX,bbc.co.uk,$app_name
-  - DOMAIN-SUFFIX,steamcommunity.com,$app_name
-  - DOMAIN-SUFFIX,twitch.tv,$app_name
-  - DOMAIN-SUFFIX,vimeo.com,$app_name
-  - DOMAIN-SUFFIX,tumblr.com,$app_name
-  - DOMAIN-SUFFIX,linkedin.com,$app_name
-  - DOMAIN-SUFFIX,licdn.com,$app_name
-  - DOMAIN-SUFFIX,mega.nz,$app_name
-  - DOMAIN-SUFFIX,archive.org,$app_name
-  - DOMAIN-SUFFIX,wikimedia.org,$app_name
-  - DOMAIN-SUFFIX,soundcloud.com,$app_name
-  # Telegram IP
-  - IP-CIDR,91.108.4.0/22,$app_name,no-resolve
-  - IP-CIDR,91.108.8.0/21,$app_name,no-resolve
-  - IP-CIDR,91.108.12.0/22,$app_name,no-resolve
-  - IP-CIDR,91.108.16.0/22,$app_name,no-resolve
-  - IP-CIDR,91.108.56.0/22,$app_name,no-resolve
-  - IP-CIDR,149.154.160.0/20,$app_name,no-resolve
-  - IP-CIDR6,2001:67c:4e8::/48,$app_name,no-resolve
-  - IP-CIDR6,2001:b28:f23d::/48,$app_name,no-resolve
-  - IP-CIDR6,2001:b28:f23f::/48,$app_name,no-resolve
-  # Fallback
-  - GEOIP,CN,DIRECT
+  - RULE-SET,icloud,DIRECT
+  - RULE-SET,apple,DIRECT
+  - RULE-SET,google,$app_name
+  - RULE-SET,proxy,$app_name
+  - RULE-SET,direct,DIRECT
+  - RULE-SET,lancidr,DIRECT
+  - RULE-SET,cncidr,DIRECT
+  - RULE-SET,telegramcidr,$app_name
+  - GEOIP,LAN,DIRECT
+  - GEOIP,CN,DIRECT,no-resolve
   - MATCH,$app_name

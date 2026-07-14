@@ -62,6 +62,9 @@ class UserRoute
             // Server
             $router->get('/server/fetch', [ServerController::class, 'fetch']);
             // Coupon
+            $router->get('/coupon/saved', [CouponController::class, 'saved']);
+            $router->post('/coupon/save', [CouponController::class, 'save']);
+            $router->post('/coupon/remove', [CouponController::class, 'remove']);
             $router->post('/coupon/check', [CouponController::class, 'check']);
             // Gift Card
             $router->post('/gift-card/check', [GiftCardController::class, 'check']);

@@ -4,12 +4,16 @@ import { clientImportUrl } from '@/shared/client-import'
 describe('client import links', () => {
   const subscription = 'https://misaka-network.site/sub?token=a+b&mode=full'
 
-  it('uses the Xboard-compatible Shadowrocket subscription URI', () => {
-    expect(clientImportUrl('shadowrocket', subscription)).toBe('shadowrocket://add/sub://https%3A%2F%2Fmisaka-network.site%2Fsub%3Ftoken%3Da%2Bb%26mode%3Dfull?remark=Misaka%20Subscription')
+  it('uses a Base64URL Shadowrocket subscription URI and site remark', () => {
+    const link = clientImportUrl('shadowrocket', subscription, '御坂网络')
+    const match = link.match(/^shadowrocket:\/\/add\/sub:\/\/([^?]+)\?remark=(.+)$/)
+    expect(match).not.toBeNull()
+    expect(Buffer.from(match![1], 'base64url').toString()).toBe(subscription)
+    expect(decodeURIComponent(match![2])).toBe('御坂网络')
   })
 
-  it('encodes desktop client subscription URLs', () => {
-    expect(clientImportUrl('clash', subscription)).toContain(`url=${encodeURIComponent(subscription)}`)
+  it('uses the dedicated Clash Verge scheme with the URL last', () => {
+    expect(clientImportUrl('clash', subscription, 'Misaka Network')).toBe(`clash-verge://install-config?name=Misaka%20Network&url=${encodeURIComponent(subscription)}`)
     expect(clientImportUrl('v2rayn', subscription)).toContain(`url=${encodeURIComponent(subscription)}`)
   })
 })
