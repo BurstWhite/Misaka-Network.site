@@ -316,6 +316,18 @@ class ThemeService
             return false;
         }
 
+        if ($theme === 'Misaka') {
+            $manifestPath = $path . '/assets/.vite/manifest.json';
+            if (!File::isFile($manifestPath)) {
+                return false;
+            }
+            $manifest = json_decode(File::get($manifestPath), true);
+            $entry = is_array($manifest) ? ($manifest['src/main.ts']['file'] ?? null) : null;
+            if (!is_string($entry) || !preg_match('/^app-[A-Za-z0-9_-]+\.js$/', $entry) || !File::isFile($path . '/assets/' . $entry)) {
+                return false;
+            }
+        }
+
         $viewPath = $this->getThemeViewPath($theme);
         if (!$viewPath || !File::isFile($viewPath)) {
             return false;

@@ -38,6 +38,19 @@ class ThemeServiceTest extends TestCase
 
         $this->assertStringContainsString('{!! $runtime_config_json !!}', $view);
         $this->assertStringNotContainsString('@json(', $view);
+        $this->assertStringContainsString('assets/{{ $entry_asset }}', $view);
+        $this->assertStringNotContainsString('assets/app.js?v=', $view);
+    }
+
+    public function test_misaka_lazy_view_reuses_the_hashed_entry_module(): void
+    {
+        $assets = base_path('theme/Misaka/assets');
+        $manifest = json_decode(file_get_contents($assets . '/.vite/manifest.json'), true);
+        $entry = $manifest['src/main.ts']['file'];
+        $dataView = file_get_contents($assets . '/' . $manifest['src/features/data/DataView.vue']['file']);
+
+        $this->assertStringContainsString('../' . $entry, $dataView);
+        $this->assertStringNotContainsString('../app.js', $dataView);
     }
 
     public function test_refresh_uses_frontend_theme_and_synchronizes_public_files(): void
@@ -56,10 +69,13 @@ class ThemeServiceTest extends TestCase
 
             $service = app(ThemeService::class);
             $this->assertTrue($service->refreshCurrentTheme());
-            $this->assertFileExists($testPublicPath . '/theme/Misaka/assets/app.js');
+            $manifest = json_decode(file_get_contents($testPublicPath . '/theme/Misaka/assets/.vite/manifest.json'), true);
+            $entry = $manifest['src/main.ts']['file'];
+            $this->assertMatchesRegularExpression('/^app-[A-Za-z0-9_-]+\.js$/', $entry);
+            $this->assertFileExists($testPublicPath . '/theme/Misaka/assets/' . $entry);
             $this->assertFileDoesNotExist($testPublicPath . '/theme/Misaka/stale.js');
             $this->assertTrue($service->isPublished('Misaka'));
-            File::delete($testPublicPath . '/theme/Misaka/assets/app.js');
+            File::delete($testPublicPath . '/theme/Misaka/assets/' . $entry);
             $this->assertFalse($service->isPublished('Misaka'));
             $this->assertSame('Misaka', admin_setting('frontend_theme'));
             $this->assertSame('Misaka', admin_setting('current_theme'));

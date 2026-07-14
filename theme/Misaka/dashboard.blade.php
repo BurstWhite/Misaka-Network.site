@@ -17,7 +17,7 @@
     })();
   </script>
   <link rel="stylesheet" href="/theme/{{ $theme }}/assets/app.css?v={{ $version }}" />
-  <script type="module" src="/theme/{{ $theme }}/assets/app.js?v={{ $version }}"></script>
+  <script type="module" src="/theme/{{ $theme }}/assets/{{ $entry_asset }}"></script>
 </head>
 <body><div id="app"></div>{!! $theme_config['custom_html'] ?? '' !!}</body>
 </html>

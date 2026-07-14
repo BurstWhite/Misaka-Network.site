@@ -107,6 +107,16 @@ Route::get('/', function (Request $request) {
             'features' => new \stdClass(),
         ];
 
+        $entryAsset = 'app.js';
+        if ($theme === 'Misaka') {
+            $manifestPath = $themeService->getThemePath($theme) . '/assets/.vite/manifest.json';
+            $manifest = File::isFile($manifestPath) ? json_decode(File::get($manifestPath), true) : null;
+            $entryAsset = is_array($manifest) ? ($manifest['src/main.ts']['file'] ?? null) : null;
+            if (!is_string($entryAsset) || !preg_match('/^app-[A-Za-z0-9_-]+\.js$/', $entryAsset)) {
+                throw new Exception('Misaka 主题入口文件无效');
+            }
+        }
+
         $renderParams = [
             'title' => admin_setting('app_name', 'Xboard'),
             'theme' => $theme,
@@ -114,6 +124,7 @@ Route::get('/', function (Request $request) {
             'description' => admin_setting('app_description', 'Xboard is best'),
             'logo' => admin_setting('logo'),
             'theme_config' => $themeConfig,
+            'entry_asset' => $entryAsset,
             // Encode outside the Blade directive parser. This also keeps closing
             // script tags and quotes from custom settings inert inside JavaScript.
             'runtime_config_json' => json_encode(
