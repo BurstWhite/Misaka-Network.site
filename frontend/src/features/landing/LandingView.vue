@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { guestApi } from '@/api/services'
 import { runtimeConfig } from '@/app/config'
+import { useAuthStore } from '@/stores/auth'
 import Icon from '@/shared/Icon.vue'
 import { bytes, money } from '@/shared/format'
 import { displayNodeCode, displayRate, extractRows, stripMarkup } from '@/shared/catalog'
@@ -21,6 +22,8 @@ const plans = ref<PublicPlan[]>([])
 const selectedNodeId = ref<string | number | null>(null)
 const videoSrc = ref('')
 const backgroundVideoUrl = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4'
+const auth = useAuthStore()
+const registerEnabled = computed(() => auth.registerEnabled)
 
 const features = computed(() => [
   [content('landing.feature.nodes.title', '全球节点'), content('landing.feature.nodes.description', '智能选择更稳定的连接路径，在不同网络环境下保持顺畅。'), 'globe'],
@@ -126,6 +129,7 @@ onMounted(() => {
   document.querySelectorAll('.landing .reveal').forEach((element) => observer.value?.observe(element))
   if (document.readyState === 'complete') loadBackgroundVideo()
   else window.addEventListener('load', loadBackgroundVideo, { once: true })
+  void auth.loadConfig()
   void loadCatalog()
 })
 onBeforeUnmount(() => {
@@ -223,7 +227,7 @@ onBeforeUnmount(() => {
       <div v-else-if="!plans.length" class="landing-data-state"><p>当前暂无可售套餐。</p><RouterLink to="/login">进入控制台查看 <span>→</span></RouterLink></div>
       <div v-else class="plan-grid">
         <article v-for="plan in plans" :key="plan.id" :class="['plan-card', { featured: isFeaturedPlan(plan) }]">
-          <small>{{ plan.name || '未命名套餐' }}</small><h3>{{ planPrice(plan) }}</h3><p>{{ planDescription(plan) }}</p><ul><li v-for="item in planItems(plan)" :key="item"><span>✓</span>{{ item }}</li></ul><RouterLink to="/register">查看套餐详情 <span>→</span></RouterLink>
+          <small>{{ plan.name || '未命名套餐' }}</small><h3>{{ planPrice(plan) }}</h3><p>{{ planDescription(plan) }}</p><ul><li v-for="item in planItems(plan)" :key="item"><span>✓</span>{{ item }}</li></ul><RouterLink :to="registerEnabled ? '/register' : '/login'">{{ registerEnabled ? '查看套餐详情' : '登录查看套餐详情' }} <span>→</span></RouterLink>
         </article>
       </div>
       <div class="billing-toggle"><span :class="{ active: !yearly }">月付</span><button type="button" :class="{ active: yearly }" :aria-pressed="yearly" @click="yearly=!yearly"><i/></button><span :class="{ active: yearly }">年付</span></div>
@@ -231,7 +235,7 @@ onBeforeUnmount(() => {
     </section>
 
     <section id="support" class="final-cta wrap reveal liquid-glass">
-      <div class="cta-glow"/><div class="logo-mark large"><i/><i/></div><h2>{{ content('landing.cta.title', '少一点等待。') }}<br>{{ content('landing.cta.accent', '多一点抵达。') }}</h2><p>{{ content('landing.cta.description', '创建你的 Misaka Network 账户，让可靠连接成为每天最自然的一部分。') }}</p><div><RouterLink class="pill pill-light" to="/register">创建账户 <span>→</span></RouterLink><RouterLink class="pill pill-ghost" to="/login">已有账户</RouterLink></div>
+      <div class="cta-glow"/><div class="logo-mark large"><i/><i/></div><h2>{{ content('landing.cta.title', '少一点等待。') }}<br>{{ content('landing.cta.accent', '多一点抵达。') }}</h2><p>{{ registerEnabled ? content('landing.cta.description', '创建你的 Misaka Network 账户，让可靠连接成为每天最自然的一部分。') : '登录现有账户，继续使用你的 Misaka Network 连接。' }}</p><div><RouterLink class="pill pill-light" :to="registerEnabled ? '/register' : '/login'">{{ registerEnabled ? '创建账户' : '登录账户' }} <span>→</span></RouterLink><RouterLink class="pill pill-ghost" to="/login">已有账户</RouterLink></div>
     </section>
 
     <footer class="footer wrap"><a class="logo" href="#top" @click.prevent="scrollToSection('top')"><span class="logo-mark small"><i/><i/></span><span>{{ runtimeConfig.appName }}</span></a><p>{{ content('landing.footer.tagline', 'Reliable global connectivity.') }}</p><span>© {{ new Date().getFullYear() }} {{ runtimeConfig.appName }}</span></footer>

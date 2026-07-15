@@ -71,7 +71,7 @@ class RegisterService
 
         // 检查是否关闭注册
         if ((int) admin_setting('stop_register', 0)) {
-            return [false, [400, __('Registration has closed')]];
+            return [false, [404, __('Registration has closed')]];
         }
 
         // 检查邀请码要求

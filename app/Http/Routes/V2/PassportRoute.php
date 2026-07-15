@@ -3,6 +3,7 @@ namespace App\Http\Routes\V2;
 
 use App\Http\Controllers\V1\Passport\AuthController;
 use App\Http\Controllers\V1\Passport\CommController;
+use App\Http\Middleware\BlockRegistration;
 use Illuminate\Contracts\Routing\Registrar;
 
 class PassportRoute
@@ -13,7 +14,8 @@ class PassportRoute
             'prefix' => 'passport'
         ], function ($router) {
             // Auth
-            $router->post('/auth/register', [AuthController::class, 'register']);
+            $router->post('/auth/register', [AuthController::class, 'register'])
+                ->middleware(BlockRegistration::class);
             $router->post('/auth/login', [AuthController::class, 'login']);
             $router->get ('/auth/token2Login', [AuthController::class, 'token2Login']);
             $router->post('/auth/forget', [AuthController::class, 'forget']);

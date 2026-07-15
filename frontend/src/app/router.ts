@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { readToken } from '@/stores/auth-token'
+import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -8,6 +9,7 @@ const router = createRouter({
     { path: '/login', component: () => import('@/features/auth/AuthView.vue'), meta: { public: true, mode: 'login' } },
     { path: '/register', component: () => import('@/features/auth/AuthView.vue'), meta: { public: true, mode: 'register' } },
     { path: '/forgetpassword', component: () => import('@/features/auth/AuthView.vue'), meta: { public: true, mode: 'forget' } },
+    { path: '/not-found', component: () => import('@/features/not-found/NotFoundView.vue'), meta: { public: true } },
     {
       path: '/', component: () => import('@/layouts/AppShell.vue'), children: [
         { path: 'dashboard', component: () => import('@/features/dashboard/DashboardView.vue') },
@@ -25,12 +27,17 @@ const router = createRouter({
         { path: 'profile', component: () => import('@/features/profile/ProfileView.vue') },
       ],
     },
-    { path: '/:pathMatch(.*)*', redirect: '/dashboard' },
+    { path: '/:pathMatch(.*)*', component: () => import('@/features/not-found/NotFoundView.vue'), meta: { public: true } },
   ],
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const loggedIn = Boolean(readToken())
+  if (to.path === '/register') {
+    const auth = useAuthStore()
+    await auth.loadConfig()
+    if (!auth.registerEnabled) return '/not-found'
+  }
   if (!to.meta.public && !loggedIn) return { path: '/login', query: { redirect: to.fullPath } }
   if (to.meta.public && loggedIn && to.path === '/login') return '/dashboard'
 })

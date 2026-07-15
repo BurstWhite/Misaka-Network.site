@@ -6,7 +6,10 @@ let userLoadPromise: Promise<boolean> | null = null
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({ user: null as any, config: null as any, loading: false }),
-  getters: { authenticated: () => Boolean(readToken()) },
+  getters: {
+    authenticated: () => Boolean(readToken()),
+    registerEnabled: (state) => state.config?.is_register === true || state.config?.is_register === 1,
+  },
   actions: {
     async login(payload: { email: string; password: string }) {
       const result = await authApi.login(payload)
